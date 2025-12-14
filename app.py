@@ -19,7 +19,12 @@ st.set_page_config(
     page_title="データ前処理ツール",
     page_icon="📊",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded",
+    menu_items={
+        'Get Help': None,  # ヘルプメニューを非表示
+        'Report a bug': None,  # バグ報告を非表示
+        'About': None  # Aboutを非表示（GitHubリンクが含まれる可能性があるため）
+    }
 )
 
 # カスタムCSS（日本語フォント対応・エレガントなデザイン）

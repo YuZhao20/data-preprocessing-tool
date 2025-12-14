@@ -117,6 +117,8 @@ MIT License
 
 バグ報告や機能要望は、Issueでお知らせください。
 
-## 作者
+## ライセンス
 
-作成日: 2024年
+MIT License
+
+詳細は [LICENSE](LICENSE) ファイルを参照してください。

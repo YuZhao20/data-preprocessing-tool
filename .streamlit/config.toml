@@ -15,6 +15,9 @@ maxMessageSize = 200
 # 自動的にブラウザを開くかどうか
 gatherUsageStats = false
 
+# GitHubリポジトリへのリンクを非表示
+showErrorDetails = false
+
 [theme]
 # テーマ設定（オプション）
 primaryColor = "#1f77b4"
@@ -22,4 +25,3 @@ backgroundColor = "#ffffff"
 secondaryBackgroundColor = "#f0f2f6"
 textColor = "#262730"
 font = "sans serif"
-
