@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>データ前処理ツール - Yu Zhao Lab</title>
+    <style>
+        body {
+            font-family: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', 'Meiryo', sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            text-align: center;
+            padding: 40px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .btn {
+            display: inline-block;
+            padding: 15px 30px;
+            background: #1f77b4;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-top: 20px;
+            font-size: 18px;
+            transition: background 0.3s;
+        }
+        .btn:hover {
+            background: #1565a0;
+        }
+        .info {
+            margin-top: 30px;
+            padding: 20px;
+            background: white;
+            border-radius: 5px;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 データ前処理ツール</h1>
+        <p>機械学習や統計分析のためのデータ前処理を簡単に行うためのWebアプリケーションです。</p>
+        
+        <a href="https://YOUR_APP_NAME.streamlit.app" class="btn" target="_blank">
+            アプリを開く →
+        </a>
+        <p style="margin-top: 10px; font-size: 14px; color: #666;">
+            ※ Streamlit Cloudでデプロイ後、上記のURLを実際のアプリURLに置き換えてください
+        </p>
+        
+        <div class="info">
+            <h3>主な機能</h3>
+            <ul>
+                <li>データの読み込み・編集（CSV、Excel、JSON対応）</li>
+                <li>欠損値処理（自動、KNN、MICEなど）</li>
+                <li>外れ値処理（IQR、Z-score、Isolation Forestなど）</li>
+                <li>カテゴリ変数エンコーディング</li>
+                <li>特徴量スケーリング・正規化</li>
+                <li>高度な分析（重複削除、特徴量エンジニアリング、VIF分析、次元削減など）</li>
+                <li>データ可視化・統計検定</li>
+            </ul>
+            
+            <h3>使い方</h3>
+            <ol>
+                <li>ファイルをアップロード</li>
+                <li>データを確認・編集</li>
+                <li>前処理設定を選択</li>
+                <li>前処理を実行</li>
+                <li>処理済みデータをダウンロード</li>
+            </ol>
+            
+            <p><strong>注意:</strong> アップロードされたデータは一時的にのみ保存され、セッション終了時に自動的に削除されます。</p>
+        </div>
+    </div>
+    
+    <!-- 自動リダイレクト（5秒後） -->
+    <!-- Streamlit Cloudでデプロイ後、以下のURLを実際のアプリURLに置き換えてください -->
+    <script>
+        // const STREAMLIT_APP_URL = "https://YOUR_APP_NAME.streamlit.app";
+        // setTimeout(function() {
+        //     window.location.href = STREAMLIT_APP_URL;
+        // }, 5000);
+    </script>
+</body>
+</html>
+

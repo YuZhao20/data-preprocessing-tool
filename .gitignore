@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+.venv
+
+# Streamlit
+.streamlit/secrets.toml
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# 一時ファイル
+*.tmp
+*.log
+*.cache
+
+# データファイル（機密情報を含む可能性があるため）
+*.csv
+*.xlsx
+*.xls
+*.json
+*.parquet
+!sample_data/*
+
+# プロジェクト固有
+*.png
+*.jpg
+*.jpeg
+!README_images/*
+

@@ -1,0 +1,25 @@
+[server]
+# ポート設定
+port = 8501
+
+# アドレス設定（0.0.0.0で外部アクセス可能、127.0.0.1でローカルのみ）
+address = "0.0.0.0"
+
+# ファイルアップロードの最大サイズ（MB）
+maxUploadSize = 200
+
+# 最大メッセージサイズ（MB）
+maxMessageSize = 200
+
+[browser]
+# 自動的にブラウザを開くかどうか
+gatherUsageStats = false
+
+[theme]
+# テーマ設定（オプション）
+primaryColor = "#1f77b4"
+backgroundColor = "#ffffff"
+secondaryBackgroundColor = "#f0f2f6"
+textColor = "#262730"
+font = "sans serif"
+
