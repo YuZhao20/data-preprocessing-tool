@@ -17,7 +17,7 @@ import base64
 # ページ設定
 st.set_page_config(
     page_title="データ前処理ツール",
-    page_icon="📊",
+    page_icon=None,
     layout="wide",
     initial_sidebar_state="expanded",
     menu_items={
@@ -27,7 +27,7 @@ st.set_page_config(
     }
 )
 
-# カスタムCSS（日本語フォント対応・エレガントなデザイン）
+# カスタムCSS（日本語フォント対応・エレガントなデザイン・GitHubリンク非表示）
 st.markdown("""
 <style>
     .main {
@@ -84,6 +84,19 @@ st.markdown("""
         border-radius: 0.5rem 0.5rem 0 0;
         padding: 0.75rem 1.5rem;
     }
+    /* GitHubリンクを非表示 */
+    a[href*="github.com"] {
+        display: none !important;
+    }
+    /* Streamlit Cloudのフッターリンクを非表示 */
+    footer[data-testid="stFooter"] a[href*="github"] {
+        display: none !important;
+    }
+    /* メニュー内のGitHubリンクを非表示 */
+    [data-testid="stHeader"] a[href*="github"],
+    [data-testid="stHeader"] button[aria-label*="github"] {
+        display: none !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -94,16 +107,16 @@ def main():
     # ヘッダー
     col_header1, col_header2, col_header3 = st.columns([2, 1, 1])
     with col_header1:
-        st.title("📊 データ前処理ツール")
+        st.title("データ前処理ツール")
     with col_header2:
         st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("🔄 リセット", use_container_width=True, help="すべての設定とデータをリセット"):
+        if st.button("リセット", use_container_width=True, help="すべての設定とデータをリセット"):
             for key in list(st.session_state.keys()):
                 del st.session_state[key]
             st.rerun()
     with col_header3:
         st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("❓ ヘルプ", use_container_width=True, help="使い方ガイドを表示"):
+        if st.button("ヘルプ", use_container_width=True, help="使い方ガイドを表示"):
             st.session_state['show_help'] = True
     
     # 処理履歴を初期化（セッション状態に保存）
@@ -115,9 +128,9 @@ def main():
         st.markdown("---")
         col_hist1, col_hist2 = st.columns([3, 1])
         with col_hist1:
-            st.markdown("### 📝 最近の処理")
+            st.markdown("### 最近の処理")
         with col_hist2:
-            if st.button("📋 全履歴", use_container_width=True):
+            if st.button("全履歴", use_container_width=True):
                 st.session_state['show_full_history'] = True
                 st.rerun()
         
@@ -170,27 +183,27 @@ def main():
         st.info("""
         👋 **はじめに**: サイドバーからデータファイルをアップロードしてください。
         
-        📋 **基本的な使い方**:
+        **基本的な使い方**:
         1. ファイルをアップロード → 2. データを確認・編集 → 3. 前処理設定 → 4. 実行 → 5. ダウンロード
         """)
         
-        with st.expander("📖 詳細な使い方ガイド", expanded=False):
+        with st.expander("詳細な使い方ガイド", expanded=False):
             st.markdown("""
-            ### 🎯 このツールについて
+            ### このツールについて
             機械学習や統計分析のためのデータ前処理を簡単に行うためのWebアプリケーションです。
             プログラミングの知識がなくても、直感的な操作でデータの前処理ができます。
             
-            ### 📝 ステップバイステップガイド
+            ### ステップバイステップガイド
             
             #### ステップ1: データのアップロード
             - サイドバーからCSV、Excel、JSONファイルをアップロード
             - 日本語ファイルの場合は、エンコーディングを選択（通常は「自動検出」でOK）
             
-            #### ステップ2: データの確認と編集（📋 データタブ）
+            #### ステップ2: データの確認と編集（データタブ）
             - データの内容を確認
             - 必要に応じてセル、列、行を編集・削除
             
-            #### ステップ3: データの理解（📊 分析タブ）
+            #### ステップ3: データの理解（分析タブ）
             - 数値変数とカテゴリ変数の識別
             - 各変数の統計量を確認
             - 欠損値の有無を確認
@@ -201,12 +214,12 @@ def main():
             - **カテゴリ変数エンコーディング**: 自動選択（推奨）
             - **特徴量スケーリング**: 必要に応じて選択
             
-            #### ステップ5: 前処理の実行（⚙️ 前処理タブ）
-            - 「🚀 前処理を実行」ボタンをクリック
+            #### ステップ5: 前処理の実行（前処理タブ）
+            - 「前処理を実行」ボタンをクリック
             - 処理結果を確認
             - 処理済みデータをダウンロード
             
-            ### 💡 初心者向けの推奨設定
+            ### 初心者向けの推奨設定
             - **欠損値処理**: 自動（auto）
             - **外れ値処理**: 無効（必要に応じて有効化）
             - **カテゴリ変数エンコーディング**: 自動（auto）
@@ -215,9 +228,9 @@ def main():
     
     # ヘルプ表示（ヘルプボタンが押された場合）
     if 'show_help' in st.session_state:
-        with st.expander("❓ ヘルプ", expanded=True):
+        with st.expander("ヘルプ", expanded=True):
             st.markdown("""
-            ### 🆘 よくある質問
+            ### よくある質問
             
             **Q: どの前処理設定を選べばいいですか？**
             A: 初心者の方は「自動」設定を推奨します。詳細は各設定のヘルプテキストを参照してください。
@@ -229,35 +242,35 @@ def main():
             - メモリ不足（データが大きすぎる）
             
             **Q: 処理が完了しましたが、結果がおかしいです**
-            A: 「📝 履歴」タブで実行した処理を確認し、必要に応じて設定を変更して再実行してください。
+            A: 「履歴」タブで実行した処理を確認し、必要に応じて設定を変更して再実行してください。
             
             **Q: データを元に戻したい**
-            A: 「🔄 リセット」ボタンをクリックするか、「📋 データ」タブで「元のデータに戻す」をクリックしてください。
+            A: 「リセット」ボタンをクリックするか、「データ」タブで「元のデータに戻す」をクリックしてください。
             """)
             
-            if st.button("❌ ヘルプを閉じる"):
+            if st.button("ヘルプを閉じる"):
                 del st.session_state['show_help']
                 st.rerun()
     
     # 前処理フローの説明
-    with st.expander("🔄 データ前処理のフロー", expanded=False):
+    with st.expander("データ前処理のフロー", expanded=False):
         st.markdown("""
-        ### 📋 標準的な前処理の流れ
+        ### 標準的な前処理の流れ
         
         #### ステップ1: データの読み込みと確認
         1. **ファイルをアップロード**: サイドバーからCSV、Excel、JSONファイルをアップロード
         2. **エンコーディング設定**: 日本語ファイルの場合は適切なエンコーディングを選択
-        3. **データの確認**: 「📋 データプレビュー・編集」タブでデータを確認
+        3. **データの確認**: 「データプレビュー・編集」タブでデータを確認
         
         #### ステップ2: データの理解と診断（EDA）
-        1. **データ情報の確認**: 「📈 データ情報」タブで以下を確認
+        1. **データ情報の確認**: 「データ情報」タブで以下を確認
            - 数値変数とカテゴリ変数の識別
            - 各変数の値の範囲（最小値、最大値、ユニーク値など）
            - 欠損値の有無とパターン
         2. **データの可視化**: 統計量やグラフでデータの分布を確認
         
         #### ステップ3: データクリーニング
-        1. **重複データの削除**: 「📊 高度な分析」→「🔍 重複削除」で重複を検出・削除
+        1. **重複データの削除**: 「高度な分析」→「重複削除」で重複を検出・削除
         2. **異常値の処理**: 業務ルールに基づく異常値の除外（手動編集で対応）
         
         #### ステップ4: 外れ値の処理
@@ -304,7 +317,7 @@ def main():
            - **sqrt**: 平方根変換
         
         #### ステップ8: 特徴量エンジニアリング（オプション）
-        1. **交互作用項の作成**: 「📊 高度な分析」→「📐 特徴量エンジニアリング」
+        1. **交互作用項の作成**: 「高度な分析」→「特徴量エンジニアリング」
         2. **多項式特徴の作成**: 非線形関係の捕捉
         3. **ビニング**: 連続変数をカテゴリに変換
         
@@ -313,24 +326,24 @@ def main():
         2. **選択する特徴量数の指定**: 上位N個を選択
         
         #### ステップ10: 共線性の確認（オプション）
-        1. **VIF分析**: 「📊 高度な分析」→「📊 VIF分析」で共線性を検出
+        1. **VIF分析**: 「高度な分析」→「VIF分析」で共線性を検出
         2. **閾値以上の変数を削除**: VIF > 10の変数は削除を検討
         
         #### ステップ11: クラス不均衡の処理（分類タスクの場合）
-        1. **不均衡処理方法の選択**: 「📊 高度な分析」→「⚖️ クラス不均衡」
+        1. **不均衡処理方法の選択**: 「高度な分析」→「クラス不均衡」
            - **SMOTE**: Synthetic Minority Oversampling
            - **ADASYN**: Adaptive Synthetic Sampling
            - **Random Over/Under Sampling**: ランダムサンプリング
         
         #### ステップ12: データ分割（オプション）
-        1. **分割方法の選択**: 「📊 高度な分析」→「✂️ データ分割」
+        1. **分割方法の選択**: 「高度な分析」→「データ分割」
            - **random**: ランダム分割（独立同分布想定）
            - **stratified**: 層化分割（分類タスク、比率維持）
            - **timeseries**: 時系列分割（未来情報を混ぜない）
            - **group**: GroupKFold（同一グループが跨らない）
         
         #### ステップ13: 前処理の実行と結果の確認
-        1. **前処理の実行**: 「🔧 前処理実行」タブで実行
+        1. **前処理の実行**: 「前処理実行」タブで実行
         2. **結果の確認**: 処理前後の比較、統計量、可視化、統計検定
         3. **データのダウンロード**: 処理済みデータをCSV形式でダウンロード
         
@@ -343,7 +356,7 @@ def main():
     # 各機能の使い方
     with st.expander("📚 各機能の詳細な使い方", expanded=False):
         st.markdown("""
-        ### 📋 データプレビュー・編集タブ
+        ### データプレビュー・編集タブ
         
         #### 閲覧モード
         - データを参照番号付きで表示（列番号: [0], [1]...、行番号: 0, 1, 2...）
@@ -375,7 +388,7 @@ def main():
         - **挿入・追加**: 列や行の追加
         - **入れ替え**: 列や行の入れ替え
         
-        ### 📈 データ情報タブ
+        ### データ情報タブ
         
         - **数値変数とカテゴリ変数の識別**: 自動的に識別
         - **変数の詳細情報**: 各変数について以下を表示
@@ -384,7 +397,7 @@ def main():
           - カテゴリ変数: 値の例（10個まで）
         - **欠損値の詳細**: 欠損値がある列の詳細情報
         
-        ### 🔧 前処理実行タブ
+        ### 前処理実行タブ
         
         1. **ターゲット列の選択**: 特徴量選択やTarget Encodingを使用する場合
         2. **前処理の実行**: サイドバーで設定したオプションに基づいて実行
@@ -393,7 +406,7 @@ def main():
            - 処理結果の比較（処理前後の統計量、可視化、統計検定）
         4. **データのダウンロード**: 処理済みデータをCSV形式でダウンロード
         
-        ### 📊 高度な分析タブ
+        ### 高度な分析タブ
         
         - **重複削除**: 完全一致、キー重複、類似度ベースの重複削除
         - **特徴量エンジニアリング**: 交互作用項、多項式特徴、ビニング
@@ -420,7 +433,7 @@ def main():
         if uploaded_file is not None:
             # ファイル情報をコンパクトに表示
             file_size = uploaded_file.size / 1024  # KB
-            st.success(f"✅ **{uploaded_file.name}** ({file_size:.1f} KB)")
+            st.success(f"**{uploaded_file.name}** ({file_size:.1f} KB)")
             
             if uploaded_file.name.lower().endswith('.csv'):
                 st.markdown("**🔤 エンコーディング**")
@@ -442,13 +455,13 @@ def main():
                 selected_encoding = encoding_map[encoding_option]
         
         st.markdown("---")
-        st.markdown("## ⚙️ 前処理設定")
+        st.markdown("## 前処理設定")
         
         # 初心者向けのクイック設定
-        st.info("💡 **初心者の方**: デフォルト設定のまま「⚙️ 前処理」タブで実行できます。")
+        st.info("**初心者の方**: デフォルト設定のまま「前処理」タブで実行できます。")
         
         # 前処理オプション（コンパクトに）
-        with st.expander("💧 欠損値処理", expanded=True):
+        with st.expander("欠損値処理", expanded=True):
             st.caption("データに欠損値（空白やNaN）がある場合の処理方法を選択します")
             missing_strategy = st.selectbox(
                 "処理方法",
@@ -479,7 +492,7 @@ def main():
                 missing_method = "mean"
                 n_iterations = 5
         
-        with st.expander("🔍 外れ値処理", expanded=False):
+        with st.expander("外れ値処理", expanded=False):
             st.caption("データから異常に大きい/小さい値を検出・処理します")
             remove_outliers = st.checkbox("外れ値を処理する", value=False)
             
@@ -565,7 +578,7 @@ def main():
                 winsorize_limits = (0.01, 0.99)
                 action = 'remove'
         
-        with st.expander("🏷️ カテゴリ変数エンコーディング", expanded=False):
+        with st.expander("カテゴリ変数エンコーディング", expanded=False):
             st.caption("文字列やカテゴリデータを数値に変換します")
             encoding_method_option = st.selectbox(
                 "エンコーディング方法",
@@ -586,7 +599,7 @@ def main():
             if encoding_method == "target":
                 st.info("💡 Target encoding使用時は、前処理実行時にターゲット列を選択してください。")
         
-        with st.expander("📏 特徴量スケーリング", expanded=False):
+        with st.expander("特徴量スケーリング", expanded=False):
             st.caption("数値データの範囲を調整します（機械学習で重要）")
             scaling_method_option = st.selectbox(
                 "スケーリング方法",
@@ -612,7 +625,7 @@ def main():
             else:
                 scaling_method = scaling_method_option.split(" (")[0]
         
-        with st.expander("🎯 特徴量選択", expanded=False):
+        with st.expander("特徴量選択", expanded=False):
             feature_selection = st.checkbox("特徴量選択を実行", value=False)
             if feature_selection:
                 k_features = st.number_input(
@@ -626,7 +639,7 @@ def main():
             else:
                 k_features = "auto"
         
-        with st.expander("⚙️ 詳細設定", expanded=False):
+        with st.expander("詳細設定", expanded=False):
             categorical_threshold = st.number_input(
                 "カテゴリ変数の閾値",
                 min_value=2,
@@ -636,14 +649,14 @@ def main():
             )
         
         st.markdown("---")
-        st.markdown("## 📊 分析オプション")
+        st.markdown("## 分析オプション")
         
-        show_statistics = st.checkbox("📈 記述統計量を表示", value=True)
-        show_visualization = st.checkbox("📊 グラフを表示", value=False, 
+        show_statistics = st.checkbox("記述統計量を表示", value=True)
+        show_visualization = st.checkbox("グラフを表示", value=False, 
                                          help="変数が多い場合は非推奨")
         
         st.markdown("---")
-        show_tests = st.checkbox("🔬 統計検定を実行", value=False, 
+        show_tests = st.checkbox("統計検定を実行", value=False, 
                                 help="データの分布や特性を統計的に検定します")
         
         if show_tests:
@@ -655,7 +668,7 @@ def main():
                 key="alpha_level_sidebar"
             )
             
-            with st.expander("📖 統計検定の詳細", expanded=False):
+            with st.expander("統計検定の詳細", expanded=False):
                 st.markdown("""
                 ### 実装されている統計検定
                 
@@ -687,7 +700,7 @@ def main():
                 
                 ### 使い方
                 1. 「統計検定を実行」にチェックを入れる
-                2. 「🔧 前処理実行」タブで前処理を実行
+                2. 「前処理実行」タブで前処理を実行
                 3. 検定結果が自動的に表示されます
                 
                 ### 解釈の目安
@@ -729,23 +742,23 @@ def main():
             
             # タブで情報を表示（より直感的な名前）
             tab1, tab2, tab3, tab4, tab5 = st.tabs([
-                "📋 データ", "📊 分析", 
-                "⚙️ 前処理", "🔬 高度な機能", "📝 履歴"
+                "データ", "分析", 
+                "前処理", "高度な機能", "履歴"
             ])
             
             with tab1:
-                st.markdown("### 📋 データの確認と編集")
+                st.markdown("### データの確認と編集")
                 st.caption("データの内容を確認し、必要に応じて編集できます")
                 
                 # 編集モードの選択
                 edit_mode = st.radio(
                     "表示モード",
-                    ["📖 閲覧", "✏️ セル編集", "🔧 列・行操作"],
+                    ["閲覧", "セル編集", "列・行操作"],
                     horizontal=True,
                     help="編集モードでは、セルを直接クリックして編集できます"
                 )
                 
-                if edit_mode == "✏️ セル編集":
+                if edit_mode == "セル編集":
                     # 参照番号付きでデータを表示（列番号と行番号を表示）
                     df_display = st.session_state['current_df'].copy()
                     df_display.index.name = '行番号'
@@ -769,7 +782,7 @@ def main():
                         st.success("✅ データが更新されました")
                         st.rerun()
                 
-                elif edit_mode == "🔧 列・行操作":
+                elif edit_mode == "列・行操作":
                     # データを参照番号付きで表示
                     st.info("💡 ヒント: 列番号と行番号を確認してから操作してください")
                     
@@ -780,7 +793,7 @@ def main():
                     st.dataframe(df_display.head(20), use_container_width=True, height=300)
                     
                     # 列操作パネル
-                    with st.expander("📊 列操作", expanded=True):
+                    with st.expander("列操作", expanded=True):
                         col_op1, col_op2 = st.columns([1, 2])
                         with col_op1:
                             selected_col = st.selectbox("列を選択", st.session_state['current_df'].columns, key="col_select")
@@ -873,7 +886,7 @@ def main():
                                     
                                     # 現在の位置と同じ場合は何もしない
                                     if current_idx == new_pos:
-                                        st.info(f"ℹ️ 列 '{selected_col}' は既に位置 {new_pos} にあります")
+                                        st.info(f"列 '{selected_col}' は既に位置 {new_pos} にあります")
                                     else:
                                         # 列を削除
                                         cols.remove(selected_col)
@@ -927,7 +940,7 @@ def main():
                                 st.exception(e)
                     
                     # 行操作パネル
-                    with st.expander("📋 行操作", expanded=True):
+                    with st.expander("行操作", expanded=True):
                         row_op1, row_op2 = st.columns([1, 2])
                         with row_op1:
                             row_action = st.selectbox(
@@ -1055,7 +1068,7 @@ def main():
                                             if row_idx < len(st.session_state['current_df']) and new_pos < len(st.session_state['current_df']):
                                                 # 現在の位置と同じ場合は何もしない
                                                 if row_idx == new_pos:
-                                                    st.info(f"ℹ️ 行 {row_idx} は既に位置 {new_pos} にあります")
+                                                    st.info(f"行 {row_idx} は既に位置 {new_pos} にあります")
                                                 else:
                                                     # 行データを取得
                                                     row_data = st.session_state['current_df'].iloc[row_idx:row_idx+1].copy()
@@ -1121,10 +1134,10 @@ def main():
                 
                 # 追加の編集機能（削除、置換、並べ替え、挿入・追加、入れ替え）
                 st.markdown("---")
-                st.subheader("🔧 編集ツール")
+                st.subheader("編集ツール")
                 
                 edit_tabs = st.tabs([
-                    "🗑️ 削除", "🔄 置換", "🔄 並べ替え", "➕ 挿入・追加", "↔️ 入れ替え"
+                    "削除", "置換", "並べ替え", "挿入・追加", "入れ替え"
                 ])
                 
                 with edit_tabs[0]:
@@ -1461,7 +1474,7 @@ def main():
                 
                 # リセットボタン
                 st.markdown("---")
-                if st.button("🔄 編集をリセット（元のデータに戻す）", type="secondary"):
+                if st.button("編集をリセット（元のデータに戻す）", type="secondary"):
                     st.session_state['current_df'] = st.session_state['original_df'].copy()
                     st.success("✅ データをリセットしました")
                     st.rerun()
@@ -1487,7 +1500,7 @@ def main():
                         st.info("カテゴリ変数が見つかりませんでした")
                 
                 # 各変数の詳細情報（値の範囲を含む）
-                st.subheader("📊 変数の詳細情報")
+                st.subheader("変数の詳細情報")
                 info_data = []
                 
                 for col in st.session_state['current_df'].columns:
@@ -1532,7 +1545,7 @@ def main():
                 
                 # 変数選択と可視化・統計処理
                 st.markdown("---")
-                st.subheader("📊 変数の可視化・統計処理")
+                st.subheader("変数の可視化・統計処理")
                 
                 selected_var = st.selectbox(
                     "分析する変数を選択",
@@ -1545,7 +1558,7 @@ def main():
                     is_numeric_var = pd.api.types.is_numeric_dtype(var_data)
                     
                     # 基本統計量
-                    st.subheader(f"📈 {selected_var} の基本統計量")
+                    st.subheader(f"{selected_var} の基本統計量")
                     stat_col1, stat_col2, stat_col3, stat_col4 = st.columns(4)
                     
                     with stat_col1:
@@ -1579,7 +1592,7 @@ def main():
                         st.dataframe(stats_df, use_container_width=True)
                     
                     # 可視化
-                    st.subheader(f"📊 {selected_var} の可視化")
+                    st.subheader(f"{selected_var} の可視化")
                     
                     if is_numeric_var:
                         # 数値変数の可視化
@@ -1777,25 +1790,25 @@ def main():
                         st.dataframe(value_counts_df, use_container_width=True)
             
             with tab3:
-                st.markdown("### ⚙️ 前処理の実行")
+                st.markdown("### 前処理の実行")
                 st.caption("サイドバーで設定した前処理を実行します")
                 
                 # 前処理設定のサマリーを表示
                 col_sum1, col_sum2 = st.columns(2)
                 with col_sum1:
-                    st.markdown("**📋 現在の設定**")
-                    st.markdown(f"- 💧 欠損値: `{missing_strategy}`")
-                    st.markdown(f"- 🔍 外れ値: {'有効' if remove_outliers else '無効'}")
+                    st.markdown("**現在の設定**")
+                    st.markdown(f"- 欠損値: `{missing_strategy}`")
+                    st.markdown(f"- 外れ値: {'有効' if remove_outliers else '無効'}")
                 with col_sum2:
-                    st.markdown("**📋 現在の設定（続き）**")
-                    st.markdown(f"- 🏷️ エンコーディング: `{encoding_method}`")
-                    st.markdown(f"- 📏 スケーリング: `{scaling_method if scaling_method else 'なし'}`")
+                    st.markdown("**現在の設定（続き）**")
+                    st.markdown(f"- エンコーディング: `{encoding_method}`")
+                    st.markdown(f"- スケーリング: `{scaling_method if scaling_method else 'なし'}`")
                 
                 # ターゲット列の選択（特徴量選択を使用する場合）
                 target_col = None
                 if feature_selection:
                     target_col = st.selectbox(
-                        "🎯 ターゲット列（特徴量選択用）",
+                        "ターゲット列（特徴量選択用）",
                         ["なし"] + list(st.session_state['current_df'].columns),
                         help="特徴量選択を実行する場合は、ターゲット列を選択してください"
                     )
@@ -1807,7 +1820,7 @@ def main():
                 # 前処理実行ボタン（より目立つデザイン）
                 col_exec1, col_exec2, col_exec3 = st.columns([1, 2, 1])
                 with col_exec2:
-                    if st.button("🚀 前処理を実行", type="primary", use_container_width=True):
+                    if st.button("前処理を実行", type="primary", use_container_width=True):
                         with st.spinner("前処理を実行中..."):
                             try:
                                 # 前処理を実行（編集済みデータを使用）
@@ -1931,7 +1944,7 @@ def main():
                                 
                                 # 結果を表示（コンパクトに）
                                 st.markdown("---")
-                                st.subheader("📋 処理結果の概要")
+                                st.subheader("処理結果の概要")
                                 
                                 # 処理前後の比較をコンパクトに表示
                                 col1, col2, col3, col4 = st.columns(4)
@@ -1954,7 +1967,7 @@ def main():
                                 # 記述統計量（コンパクトに表示）
                                 if show_statistics:
                                     st.markdown("---")
-                                    st.subheader("📈 記述統計量")
+                                    st.subheader("記述統計量")
                                     
                                     # 基本統計量をコンパクトに表示
                                     num_cols = [col for col in preprocessor.numerical_columns if col in processed_df.columns]
@@ -2000,7 +2013,7 @@ def main():
                                 
                                 # 可視化（オプション）
                                 st.markdown("---")
-                                st.subheader("📊 データの可視化")
+                                st.subheader("データの可視化")
                                 
                                 # 変数が多い場合の警告
                                 num_numeric_cols = len([col for col in preprocessor.numerical_columns if col in processed_df.columns])
@@ -2075,7 +2088,7 @@ def main():
                                 # 統計検定（オプション）
                                 if show_tests:
                                     st.markdown("---")
-                                    st.subheader("📊 統計検定")
+                                    st.subheader("統計検定")
                                     
                                     # 変数が多い場合の警告
                                     num_numeric_cols = len([col for col in preprocessor.numerical_columns if col in processed_df.columns])
@@ -2095,7 +2108,7 @@ def main():
                                                         if col in ['levene_test', 'bartlett_test', 'chi_square_test']:
                                                             continue  # これらは後で表示
                                                         
-                                                        with st.expander(f"📈 {col} の検定結果", expanded=False):
+                                                        with st.expander(f"{col} の検定結果", expanded=False):
                                                             # 正規性検定
                                                             if 'shapiro_wilk' in col_results:
                                                                 sw = col_results['shapiro_wilk']
@@ -2144,7 +2157,7 @@ def main():
                                                     # 等分散性検定
                                                     if 'levene_test' in test_results:
                                                         st.markdown("---")
-                                                        st.subheader("🔍 等分散性検定")
+                                                        st.subheader("等分散性検定")
                                                         levene = test_results['levene_test']
                                                         col1, col2, col3 = st.columns(3)
                                                         with col1:
@@ -2187,7 +2200,7 @@ def main():
                                                     
                                                     # 検定結果のサマリー
                                                     st.markdown("---")
-                                                    st.subheader("📋 検定結果サマリー")
+                                                    st.subheader("検定結果サマリー")
                                                     
                                                     summary_data = []
                                                     for col_sum, col_results_sum in test_results.items():
@@ -2248,12 +2261,12 @@ def main():
                                 st.exception(e)
             
             with tab4:
-                st.subheader("📊 高度な分析")
+                st.subheader("高度な分析")
                 
                 analysis_tabs = st.tabs([
-                    "🔍 重複削除", "📐 特徴量エンジニアリング", 
-                    "📊 VIF分析", "⚖️ クラス不均衡", "✂️ データ分割",
-                    "🔬 高度な診断", "🎯 特徴量選択（高度）", "📉 次元削減"
+                    "重複削除", "特徴量エンジニアリング", 
+                    "VIF分析", "クラス不均衡", "データ分割",
+                    "高度な診断", "特徴量選択（高度）", "次元削減"
                 ])
                 
                 with analysis_tabs[0]:
@@ -2319,7 +2332,7 @@ def main():
                             st.success(f"✅ 重複削除完了: {df_before}行 → {df_after}行（{df_before - df_after}行削除）")
                             
                             # 詳細結果を表示
-                            with st.expander("📊 処理結果の詳細", expanded=True):
+                            with st.expander("処理結果の詳細", expanded=True):
                                 col1, col2, col3 = st.columns(3)
                                 with col1:
                                     st.metric("処理前行数", df_before)
@@ -2410,7 +2423,7 @@ def main():
                             st.success(f"✅ 特徴量エンジニアリングが完了しました（{df_after_cols - df_before_cols}個の特徴量を追加）")
                             
                             # 詳細結果を表示
-                            with st.expander("📊 処理結果の詳細", expanded=True):
+                            with st.expander("処理結果の詳細", expanded=True):
                                 col1, col2, col3 = st.columns(3)
                                 with col1:
                                     st.metric("処理前列数", df_before_cols)
@@ -2578,7 +2591,7 @@ def main():
                                     st.success(f"✅ クラス不均衡処理完了: {df_before}行 → {df_after}行")
                                     
                                     # 詳細結果を表示
-                                    with st.expander("📊 処理結果の詳細", expanded=True):
+                                    with st.expander("処理結果の詳細", expanded=True):
                                         col1, col2, col3 = st.columns(3)
                                         with col1:
                                             st.metric("処理前行数", df_before)
@@ -2678,7 +2691,7 @@ def main():
                                             st.success(f"✅ データ分割完了: 学習データ {train_size}行, テストデータ {test_size_actual}行")
                                             
                                             # 詳細結果を表示
-                                            with st.expander("📊 処理結果の詳細", expanded=True):
+                                            with st.expander("処理結果の詳細", expanded=True):
                                                 col1, col2, col3 = st.columns(3)
                                                 with col1:
                                                     st.metric("元のデータ行数", df_before)
@@ -2711,7 +2724,7 @@ def main():
                                             st.success(f"✅ CV分割完了: {n_folds}個のfold")
                                             
                                             # 詳細結果を表示
-                                            with st.expander("📊 処理結果の詳細", expanded=True):
+                                            with st.expander("処理結果の詳細", expanded=True):
                                                 st.metric("CV分割数", n_folds)
                                                 st.info(f"**分割方法**: {method} | **ターゲット列**: {target_col_split}")
                                             
@@ -2720,7 +2733,7 @@ def main():
                                     st.error(f"エラー: {e}")
                 
                 with analysis_tabs[5]:
-                    st.subheader("🔬 高度な診断")
+                    st.subheader("高度な診断")
                     
                     diag_tabs = st.tabs([
                         "条件数・相関クラスタリング", "欠損パターン診断", "異常値ルールチェック", "高度な外れ値検出"
@@ -2737,7 +2750,7 @@ def main():
                                     if cond_num > 30:
                                         st.warning("⚠️ 条件数が高いです（>30）。共線性の問題が疑われます。")
                                     elif cond_num > 10:
-                                        st.info("ℹ️ 条件数が中程度です（10-30）。注意が必要です。")
+                                        st.info("条件数が中程度です（10-30）。注意が必要です。")
                                     else:
                                         st.success("✅ 条件数は正常範囲です（<10）。")
                             except Exception as e:
@@ -2864,7 +2877,7 @@ def main():
                                 st.error(f"エラー: {e}")
                 
                 with analysis_tabs[6]:
-                    st.subheader("🎯 特徴量選択（高度）")
+                    st.subheader("特徴量選択（高度）")
                     
                     if len(st.session_state['current_df'].columns) > 0:
                         target_col_feature = st.selectbox(
@@ -2943,7 +2956,7 @@ def main():
                                         st.success(f"✅ 特徴量選択完了: {df_before_cols}列 → {df_after_cols}列（{df_before_cols - df_after_cols}列削除）")
                                         
                                         # 詳細結果を表示
-                                        with st.expander("📊 処理結果の詳細", expanded=True):
+                                        with st.expander("処理結果の詳細", expanded=True):
                                             col1, col2, col3, col4 = st.columns(4)
                                             with col1:
                                                 st.metric("処理前列数", df_before_cols)
@@ -2975,7 +2988,7 @@ def main():
                                     st.code(traceback.format_exc())
                 
                 with analysis_tabs[7]:
-                    st.subheader("📉 次元削減")
+                    st.subheader("次元削減")
                     st.info("データの次元数を削減します。PCA、MCA、UMAP、t-SNEに対応しています。")
                     
                     # 列の識別を先に実行
@@ -2986,7 +2999,7 @@ def main():
                     if len(num_cols) < 2:
                         st.warning("⚠️ 次元削減には少なくとも2つの数値変数が必要です。")
                     else:
-                        st.info(f"📊 処理対象: {len(num_cols)}個の数値変数")
+                        st.info(f"処理対象: {len(num_cols)}個の数値変数")
                         
                         dim_reduction_method = st.selectbox(
                             "次元削減方法",
@@ -3046,7 +3059,7 @@ def main():
                                     st.success(f"✅ 次元削減完了: {dim_reduction_method.upper()}で{len(num_cols)}次元 → {n_components}次元に削減")
                                     
                                     # 詳細結果を表示
-                                    with st.expander("📊 処理結果の詳細", expanded=True):
+                                    with st.expander("処理結果の詳細", expanded=True):
                                         col1, col2, col3, col4 = st.columns(4)
                                         with col1:
                                             st.metric("元の次元数", len(num_cols))
@@ -3080,7 +3093,7 @@ def main():
                                     st.info("💡 注意: UMAP/t-SNEを使用する場合は `pip install umap-learn` が必要です。")
             
             with tab5:
-                st.subheader("📝 処理履歴（詳細）")
+                st.subheader("処理履歴（詳細）")
                 st.info("実行されたすべての処理の詳細な履歴を表示します。")
                 
                 if len(st.session_state.get('processing_history', [])) == 0:
@@ -3088,7 +3101,7 @@ def main():
                 else:
                     # 統計情報を先に表示
                     st.markdown("---")
-                    st.subheader("📊 処理統計")
+                    st.subheader("処理統計")
                     total_operations = len(st.session_state['processing_history'])
                     operation_counts = {}
                     for entry in st.session_state['processing_history']:
@@ -3104,7 +3117,7 @@ def main():
                         most_common = max(operation_counts.items(), key=lambda x: x[1]) if operation_counts else ('なし', 0)
                         st.metric("最も多い処理", f"{most_common[0]}")
                     with col4:
-                        if st.button("🗑️ 履歴をクリア", use_container_width=True):
+                        if st.button("履歴をクリア", use_container_width=True):
                             st.session_state['processing_history'] = []
                             st.success("✅ 処理履歴をクリアしました")
                             st.rerun()
@@ -3118,7 +3131,7 @@ def main():
                                 st.metric(op, f"{count}回")
                     
                     st.markdown("---")
-                    st.subheader("📋 処理履歴一覧")
+                    st.subheader("処理履歴一覧")
                     
                     # フィルタリング
                     filter_option = st.selectbox(
@@ -3190,7 +3203,7 @@ def main():
         st.info("👈 左側のサイドバーからデータファイルをアップロードしてください")
         
         # 使用例を表示
-        with st.expander("📖 使用例とサンプルデータ"):
+        with st.expander("使用例とサンプルデータ"):
             st.markdown("""
             ### サンプルデータの作成方法
             

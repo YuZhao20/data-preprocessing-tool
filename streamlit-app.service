@@ -1,0 +1,16 @@
+[Unit]
+Description=Streamlit Data Preprocessing App
+After=network.target
+
+[Service]
+Type=simple
+User=streamlit
+WorkingDirectory=/home/streamlit/streamlit-app
+Environment="PATH=/home/streamlit/streamlit-app/venv/bin"
+ExecStart=/home/streamlit/streamlit-app/venv/bin/streamlit run app.py --server.port=8501 --server.address=0.0.0.0 --server.headless=true
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+

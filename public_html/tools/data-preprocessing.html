@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>データ前処理ツール - Yu Zhao Lab</title>
+    <title>データ前処理ツール</title>
     <style>
         body {
             font-family: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', 'Meiryo', sans-serif;
@@ -44,14 +44,14 @@
 </head>
 <body>
     <div class="container">
-        <h1>📊 データ前処理ツール</h1>
+        <h1>データ前処理ツール</h1>
         <p>機械学習や統計分析のためのデータ前処理を簡単に行うためのWebアプリケーションです。</p>
         
-        <a href="https://YOUR_APP_NAME.streamlit.app" class="btn" target="_blank">
+        <a href="https://tools.yu-zhao.com" class="btn" target="_blank">
             アプリを開く →
         </a>
         <p style="margin-top: 10px; font-size: 14px; color: #666;">
-            ※ Streamlit Cloudでデプロイ後、上記のURLを実際のアプリURLに置き換えてください
+            ※ VPSでデプロイ後、上記のURLを実際のアプリURLに置き換えてください
         </p>
         
         <div class="info">
@@ -79,13 +79,10 @@
         </div>
     </div>
     
-    <!-- 自動リダイレクト（5秒後） -->
-    <!-- Streamlit Cloudでデプロイ後、以下のURLを実際のアプリURLに置き換えてください -->
+    <!-- 自動リダイレクト（即座） -->
     <script>
-        // const STREAMLIT_APP_URL = "https://YOUR_APP_NAME.streamlit.app";
-        // setTimeout(function() {
-        //     window.location.href = STREAMLIT_APP_URL;
-        // }, 5000);
+        const STREAMLIT_APP_URL = "https://tools.yu-zhao.com";
+        window.location.href = STREAMLIT_APP_URL;
     </script>
 </body>
 </html>
