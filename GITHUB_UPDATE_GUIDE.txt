@@ -1,0 +1,51 @@
+GitHubで更新する方法
+====================
+
+方法1: スクリプトを使用（最も簡単）
+------------------------------------
+
+1. ターミナルで実行:
+   bash UPDATE_AND_PUSH.sh
+
+2. スクリプトが自動的に:
+   - 変更を確認
+   - 変更をステージング（git add）
+   - コミット（git commit）
+   - GitHubにプッシュ（git push）
+
+方法2: 手動でコマンドを実行
+----------------------------
+
+ステップ1: 変更を確認
+  cd /Users/yuzhao/data_preprocessing_project
+  git status
+
+ステップ2: 変更をステージング
+  git add .
+
+ステップ3: コミット
+  git commit -m "Update: Remove all md files and icons"
+
+ステップ4: GitHubにプッシュ
+  git push origin main
+
+認証が必要な場合:
+  Personal Access Token (PAT) を使用
+  1. GitHub → Settings → Developer settings → Personal access tokens
+  2. Generate new token (classic)
+  3. スコープ: repo を選択
+  4. トークンをコピー
+  5. プッシュ時に使用:
+     git remote set-url origin https://YOUR_TOKEN@github.com/YuZhao20/data-preprocessing-tool.git
+     git push origin main
+
+方法3: Personal Access Tokenを使用したスクリプト
+-------------------------------------------------
+
+  bash PUSH_TO_GITHUB.sh
+
+注意事項:
+---------
+- Streamlit Cloudを使用している場合、プッシュすると自動的に再デプロイされます
+- プッシュ後、数分待ってからStreamlit Cloudで確認してください
+
