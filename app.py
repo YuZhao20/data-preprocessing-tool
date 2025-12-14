@@ -419,7 +419,7 @@ def main():
     
     # サイドバー（先に定義してメイン部分で参照可能にする）
     with st.sidebar:
-        st.markdown("## 📁 データの読み込み")
+        st.markdown("## データの読み込み")
         
         uploaded_file = st.file_uploader(
             "ファイルをアップロード",
@@ -456,9 +456,6 @@ def main():
         
         st.markdown("---")
         st.markdown("## 前処理設定")
-        
-        # 初心者向けのクイック設定
-        st.info("**初心者の方**: デフォルト設定のまま「前処理」タブで実行できます。")
         
         # 前処理オプション（コンパクトに）
         with st.expander("欠損値処理", expanded=True):
