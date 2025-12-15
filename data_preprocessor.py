@@ -25,14 +25,40 @@ import os
 def setup_japanese_font():
     """日本語フォントを自動設定（Mac/Windows/Linux/Streamlit Cloud対応）"""
     import matplotlib.font_manager as fm
+    from matplotlib import font_manager
     
     system = platform.system()
+    
+    # まず、プロジェクト内のフォントファイルを確認
+    font_dir = os.path.join(os.path.dirname(__file__), 'fonts')
+    if os.path.exists(font_dir):
+        font_files = [f for f in os.listdir(font_dir) if f.endswith(('.ttf', '.otf'))]
+        if font_files:
+            try:
+                for font_file in font_files:
+                    font_path = os.path.join(font_dir, font_file)
+                    try:
+                        # フォントを登録
+                        font_prop = font_manager.FontProperties(fname=font_path)
+                        font_manager.fontManager.addfont(font_path)
+                        # フォント名を取得
+                        font_name = font_prop.get_name()
+                        plt.rcParams['font.family'] = font_name
+                        plt.rcParams['axes.unicode_minus'] = False
+                        return font_name
+                    except Exception as e:
+                        continue
+            except Exception as e:
+                pass
     
     # 利用可能なフォントを取得
     try:
         available_fonts = [f.name for f in fm.fontManager.ttflist]
+        # フォントパスも取得
+        font_paths = {f.name: f.fname for f in fm.fontManager.ttflist}
     except:
         available_fonts = []
+        font_paths = {}
     
     # フォント候補リスト（優先順位順）
     font_candidates = []
@@ -82,10 +108,6 @@ def setup_japanese_font():
         plt.rcParams['axes.unicode_minus'] = False
     except:
         pass
-    
-    # 警告を出力（デバッグ用、本番環境では非表示）
-    import warnings
-    warnings.filterwarnings('ignore', category=UserWarning)
     
     return None
 
@@ -1172,11 +1194,13 @@ class DataPreprocessor:
                 break
             ax = axes[plot_idx]
             df[col].hist(bins=30, ax=ax, edgecolor='black')
+            # 日本語フォントを再設定（各グラフで確実に適用）
+            setup_japanese_font()
             try:
                 ax.set_title(f'{col}の分布', fontsize=12)
                 ax.set_xlabel(col, fontsize=10)
                 ax.set_ylabel('頻度', fontsize=10)
-            except:
+            except Exception as e:
                 # フォントが利用できない場合、英語ラベルにフォールバック
                 ax.set_title(f'Distribution of {col}', fontsize=12)
                 ax.set_xlabel(col, fontsize=10)
@@ -1191,11 +1215,13 @@ class DataPreprocessor:
             ax = axes[plot_idx]
             value_counts = df[col].value_counts().head(10)
             value_counts.plot(kind='bar', ax=ax, color='steelblue', edgecolor='black')
+            # 日本語フォントを再設定（各グラフで確実に適用）
+            setup_japanese_font()
             try:
                 ax.set_title(f'{col}の分布', fontsize=12)
                 ax.set_xlabel(col, fontsize=10)
                 ax.set_ylabel('頻度', fontsize=10)
-            except:
+            except Exception as e:
                 # フォントが利用できない場合、英語ラベルにフォールバック
                 ax.set_title(f'Distribution of {col}', fontsize=12)
                 ax.set_xlabel(col, fontsize=10)
@@ -1245,19 +1271,21 @@ class DataPreprocessor:
         # 相関行列を計算
         corr_matrix = df[num_cols].corr()
         
-        # ヒートマップを作成
-        fig, ax = plt.subplots(figsize=figsize)
-        
         # 日本語フォントを再設定（確実に適用）
         setup_japanese_font()
+        
+        # ヒートマップを作成
+        fig, ax = plt.subplots(figsize=figsize)
         
         sns.heatmap(corr_matrix, annot=True, fmt='.2f', cmap='coolwarm', 
                    center=0, square=True, linewidths=1, cbar_kws={"shrink": 0.8}, ax=ax)
         
-        # タイトルを設定（フォント設定後）
+        # タイトルを設定（フォント設定後、確実に日本語を表示）
         try:
+            # 日本語フォントを再設定（確実に適用）
+            setup_japanese_font()
             ax.set_title('変数間の相関行列', fontsize=14, pad=20)
-        except:
+        except Exception as e:
             # フォントが利用できない場合、英語タイトルにフォールバック
             ax.set_title('Correlation Matrix', fontsize=14, pad=20)
         
@@ -1298,11 +1326,20 @@ class DataPreprocessor:
         
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=figsize)
         
+        # 日本語フォントを再設定（確実に適用）
+        setup_japanese_font()
+        
         # 棒グラフ
         missing_data.plot(kind='bar', ax=ax1, color='coral', edgecolor='black')
-        ax1.set_title('欠損値の数', fontsize=12)
-        ax1.set_xlabel('変数名', fontsize=10)
-        ax1.set_ylabel('欠損値の数', fontsize=10)
+        try:
+            ax1.set_title('欠損値の数', fontsize=12)
+            ax1.set_xlabel('変数名', fontsize=10)
+            ax1.set_ylabel('欠損値の数', fontsize=10)
+        except Exception as e:
+            # フォントが利用できない場合、英語ラベルにフォールバック
+            ax1.set_title('Number of Missing Values', fontsize=12)
+            ax1.set_xlabel('Variable Name', fontsize=10)
+            ax1.set_ylabel('Number of Missing Values', fontsize=10)
         ax1.tick_params(axis='x', rotation=45)
         ax1.grid(True, alpha=0.3, axis='y')
         
@@ -1313,7 +1350,7 @@ class DataPreprocessor:
             ax2.set_title('欠損値の割合 (%)', fontsize=12)
             ax2.set_xlabel('変数名', fontsize=10)
             ax2.set_ylabel('欠損値の割合 (%)', fontsize=10)
-        except:
+        except Exception as e:
             # フォントが利用できない場合、英語ラベルにフォールバック
             ax2.set_title('Missing Value Percentage (%)', fontsize=12)
             ax2.set_xlabel('Variable Name', fontsize=10)

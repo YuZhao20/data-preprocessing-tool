@@ -435,14 +435,16 @@ def main():
             file_size = uploaded_file.size / 1024  # KB
             st.success(f"**{uploaded_file.name}** ({file_size:.1f} KB)")
             
-            if uploaded_file.name.lower().endswith('.csv'):
-                st.markdown("**🔤 エンコーディング**")
+            # エンコーディング選択（CSV、Excel、JSONファイルすべてに対応）
+            file_ext = os.path.splitext(uploaded_file.name)[1].lower()
+            if file_ext in ['.csv', '.txt']:
+                st.markdown("**🔤 エンコーディング（CSVファイル）**")
                 encoding_option = st.selectbox(
                     "エンコーディング",
-                    ["自動検出", "UTF-8", "Shift-JIS (CP932)", "EUC-JP", "ISO-2022-JP"],
-                    help="日本語ファイルの文字化けを防ぐために選択",
-                    key="encoding_radio",
-                    label_visibility="collapsed"
+                    ["自動検出", "UTF-8", "Shift-JIS (CP932)", "EUC-JP", "ISO-2022-JP", "CP932"],
+                    help="日本語ファイルの文字化けを防ぐために選択。文字化けする場合は別のエンコーディングを試してください。",
+                    key="encoding_select",
+                    index=0
                 )
                 
                 encoding_map = {
@@ -450,9 +452,18 @@ def main():
                     "UTF-8": "utf-8",
                     "Shift-JIS (CP932)": "shift_jis",
                     "EUC-JP": "euc-jp",
-                    "ISO-2022-JP": "iso-2022-jp"
+                    "ISO-2022-JP": "iso-2022-jp",
+                    "CP932": "cp932"
                 }
                 selected_encoding = encoding_map[encoding_option]
+            elif file_ext in ['.xlsx', '.xls']:
+                st.info("💡 Excelファイルは自動的にエンコーディングを検出します。")
+                selected_encoding = None
+            elif file_ext == '.json':
+                st.info("💡 JSONファイルはUTF-8で読み込みます。")
+                selected_encoding = "utf-8"
+            else:
+                selected_encoding = None
         
         st.markdown("---")
         st.markdown("## 前処理設定")
