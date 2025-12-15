@@ -757,14 +757,20 @@ def main():
             
             # タブ選択UI
             tab_options = ["データ", "分析", "前処理", "高度な機能", "履歴"]
+            # 現在のタブのインデックスを取得
+            current_index = tab_options.index(st.session_state['active_tab']) if st.session_state['active_tab'] in tab_options else 0
+            
             selected_tab = st.radio(
                 "タブを選択",
                 tab_options,
+                index=current_index,
                 horizontal=True,
                 key="tab_selector",
                 label_visibility="collapsed"
             )
-            st.session_state['active_tab'] = selected_tab
+            # タブが変更された場合のみ更新（ボタンクリック時は変更しない）
+            if selected_tab != st.session_state.get('active_tab'):
+                st.session_state['active_tab'] = selected_tab
             
             # タブのコンテンツを表示
             if st.session_state['active_tab'] == "データ":
@@ -2154,6 +2160,8 @@ def main():
                                         with col_corr2:
                                             if st.button("相関行列を生成", key="btn_corr_matrix", use_container_width=True):
                                                 st.session_state['generate_corr_matrix'] = True
+                                                # タブ状態を明示的に保持
+                                                st.session_state['active_tab'] = "前処理"
                                         
                                         # 相関行列生成ボタンが押された場合、または既に生成されている場合
                                         if st.session_state.get('generate_corr_matrix', False):
