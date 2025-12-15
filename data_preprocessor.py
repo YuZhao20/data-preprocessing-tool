@@ -20,6 +20,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import platform
 import os
+import urllib.request
 
 # 日本語フォント対応（japanize-matplotlibを使用）
 try:
@@ -30,56 +31,80 @@ except ImportError:
 
 # 日本語フォント設定（Mac/Windows/Linux/Streamlit Cloud対応）
 def setup_japanese_font():
-    """日本語フォントを自動設定（Mac/Windows/Linux/Streamlit Cloud対応）"""
-    # japanize-matplotlibが利用可能な場合は使用（最も確実）
-    if JAPANIZE_AVAILABLE:
-        try:
-            import japanize_matplotlib
-            # japanize_matplotlibは自動的に日本語フォントを設定する
-            plt.rcParams['axes.unicode_minus'] = False
-            return 'japanize-matplotlib'
-        except Exception as e:
-            pass
-    
+    """日本語フォントを自動設定（確実にフォントを適用）。"""
     import matplotlib.font_manager as fm
     from matplotlib import font_manager
-    
+
+    # japanize-matplotlibがあれば最優先で使用
+    if JAPANIZE_AVAILABLE:
+        try:
+            import japanize_matplotlib  # noqa: F401
+            plt.rcParams['axes.unicode_minus'] = False
+            return font_manager.FontProperties(fname=None)
+        except Exception:
+            pass
+
     system = platform.system()
-    
-    # まず、プロジェクト内のフォントファイルを確認
     font_dir = os.path.join(os.path.dirname(__file__), 'fonts')
-    if os.path.exists(font_dir):
-        font_files = [f for f in os.listdir(font_dir) if f.endswith(('.ttf', '.otf'))]
-        if font_files:
+    os.makedirs(font_dir, exist_ok=True)
+
+    # プロジェクト内フォントを優先的に使う。なければNotoをダウンロードして保存。
+    def ensure_local_font():
+        # 優先的に探すフォント名
+        preferred_files = [
+            'NotoSansJP-Regular.otf',
+            'NotoSansCJKjp-Regular.otf',
+            'IPAexGothic.ttf'
+        ]
+        for fname in preferred_files:
+            fpath = os.path.join(font_dir, fname)
+            if os.path.exists(fpath):
+                return fpath
+        # ダウンロード試行
+        download_targets = [
+            ("NotoSansJP-Regular.otf", "https://github.com/googlefonts/noto-cjk/raw/main/Sans/OTF/Japanese/NotoSansJP-Regular.otf"),
+            ("NotoSansCJKjp-Regular.otf", "https://github.com/googlefonts/noto-cjk/raw/main/Sans/OTF/Japanese/NotoSansCJKjp-Regular.otf")
+        ]
+        for fname, url in download_targets:
+            fpath = os.path.join(font_dir, fname)
             try:
-                for font_file in font_files:
-                    font_path = os.path.join(font_dir, font_file)
+                urllib.request.urlretrieve(url, fpath)
+                return fpath
+            except Exception:
+                # 失敗したら次を試す
+                if os.path.exists(fpath):
                     try:
-                        # フォントを登録
-                        font_prop = font_manager.FontProperties(fname=font_path)
-                        font_manager.fontManager.addfont(font_path)
-                        # フォント名を取得
-                        font_name = font_prop.get_name()
-                        plt.rcParams['font.family'] = font_name
-                        plt.rcParams['axes.unicode_minus'] = False
-                        return font_name
-                    except Exception as e:
-                        continue
-            except Exception as e:
-                pass
-    
-    # 利用可能なフォントを取得
+                        os.remove(fpath)
+                    except Exception:
+                        pass
+                continue
+        return None
+
+    font_path = None
+    # 既存フォントを探す
+    existing_fonts = [f for f in os.listdir(font_dir) if f.endswith(('.ttf', '.otf'))]
+    if existing_fonts:
+        font_path = os.path.join(font_dir, existing_fonts[0])
+    else:
+        font_path = ensure_local_font()
+
+    # プロジェクト内フォントが取得できた場合はそれを使う
+    if font_path and os.path.exists(font_path):
+        try:
+            font_manager.fontManager.addfont(font_path)
+            font_prop = font_manager.FontProperties(fname=font_path)
+            plt.rcParams['font.family'] = font_prop.get_name()
+            plt.rcParams['axes.unicode_minus'] = False
+            return font_prop
+        except Exception:
+            pass
+
+    # システムフォントから探す
     try:
         available_fonts = [f.name for f in fm.fontManager.ttflist]
-        # フォントパスも取得
-        font_paths = {f.name: f.fname for f in fm.fontManager.ttflist}
-    except:
+    except Exception:
         available_fonts = []
-        font_paths = {}
-    
-    # フォント候補リスト（優先順位順）
-    font_candidates = []
-    
+
     if system == 'Darwin':  # macOS
         font_candidates = [
             'Hiragino Sans',
@@ -90,10 +115,10 @@ def setup_japanese_font():
         ]
     elif system == 'Windows':  # Windows
         font_candidates = [
-            'MS Gothic',
-            'MS PGothic',
             'Yu Gothic',
             'Meiryo',
+            'MS Gothic',
+            'MS PGothic',
             'MS Mincho'
         ]
     else:  # Linux (Streamlit Cloud含む)
@@ -104,29 +129,22 @@ def setup_japanese_font():
             'TakaoGothic',
             'IPAexGothic',
             'IPAPGothic',
-            'DejaVu Sans'  # フォールバック
+            'DejaVu Sans'
         ]
-    
-    # フォントを検索して設定
+
     for font in font_candidates:
         if font in available_fonts:
             try:
                 plt.rcParams['font.family'] = font
                 plt.rcParams['axes.unicode_minus'] = False
-                # 設定が正しく適用されたか確認
-                return font
-            except Exception as e:
+                return font_manager.FontProperties(family=font)
+            except Exception:
                 continue
-    
-    # フォントが見つからない場合、デフォルト設定
-    # 日本語は表示されないが、エラーを防ぐ
-    try:
-        plt.rcParams['font.family'] = 'DejaVu Sans'
-        plt.rcParams['axes.unicode_minus'] = False
-    except:
-        pass
-    
-    return None
+
+    # 最後のフォールバック
+    plt.rcParams['font.family'] = 'DejaVu Sans'
+    plt.rcParams['axes.unicode_minus'] = False
+    return font_manager.FontProperties(family='DejaVu Sans')
 
 # 日本語フォントを設定（モジュール読み込み時）
 # 注意: japanize-matplotlibが利用可能な場合は自動的に設定される
@@ -136,7 +154,7 @@ if JAPANIZE_AVAILABLE:
         # japanize_matplotlibは自動的に日本語フォントを設定する
         plt.rcParams['axes.unicode_minus'] = False
     except:
-        setup_japanese_font()
+        font_prop = setup_japanese_font()
 else:
     setup_japanese_font()
 
@@ -1181,7 +1199,7 @@ class DataPreprocessor:
             保存時の解像度
         """
         # 日本語フォントを再設定（確実に適用）
-        setup_japanese_font()
+        font_prop = setup_japanese_font()
         
         # 列の識別がまだ行われていない場合は実行
         if not hasattr(self, 'numerical_columns') or not hasattr(self, 'categorical_columns'):
@@ -1229,16 +1247,25 @@ class DataPreprocessor:
             ax = axes[plot_idx]
             df[col].hist(bins=30, ax=ax, edgecolor='black')
             # 日本語フォントを再設定（各グラフで確実に適用）
-            setup_japanese_font()
             try:
-                ax.set_title(f'{col}の分布', fontsize=12)
-                ax.set_xlabel(col, fontsize=10)
-                ax.set_ylabel('頻度', fontsize=10)
-            except Exception as e:
+                ax.set_title(f'{col}の分布', fontsize=12, fontproperties=font_prop)
+                ax.set_xlabel(col, fontsize=10, fontproperties=font_prop)
+                ax.set_ylabel('頻度', fontsize=10, fontproperties=font_prop)
+            except Exception:
                 # フォントが利用できない場合、英語ラベルにフォールバック
                 ax.set_title(f'Distribution of {col}', fontsize=12)
                 ax.set_xlabel(col, fontsize=10)
                 ax.set_ylabel('Frequency', fontsize=10)
+            for label in ax.get_xticklabels():
+                try:
+                    label.set_fontproperties(font_prop)
+                except Exception:
+                    pass
+            for label in ax.get_yticklabels():
+                try:
+                    label.set_fontproperties(font_prop)
+                except Exception:
+                    pass
             ax.grid(True, alpha=0.3)
             plot_idx += 1
         
@@ -1249,17 +1276,25 @@ class DataPreprocessor:
             ax = axes[plot_idx]
             value_counts = df[col].value_counts().head(10)
             value_counts.plot(kind='bar', ax=ax, color='steelblue', edgecolor='black')
-            # 日本語フォントを再設定（各グラフで確実に適用）
-            setup_japanese_font()
             try:
-                ax.set_title(f'{col}の分布', fontsize=12)
-                ax.set_xlabel(col, fontsize=10)
-                ax.set_ylabel('頻度', fontsize=10)
-            except Exception as e:
+                ax.set_title(f'{col}の分布', fontsize=12, fontproperties=font_prop)
+                ax.set_xlabel(col, fontsize=10, fontproperties=font_prop)
+                ax.set_ylabel('頻度', fontsize=10, fontproperties=font_prop)
+            except Exception:
                 # フォントが利用できない場合、英語ラベルにフォールバック
                 ax.set_title(f'Distribution of {col}', fontsize=12)
                 ax.set_xlabel(col, fontsize=10)
                 ax.set_ylabel('Frequency', fontsize=10)
+            for label in ax.get_xticklabels():
+                try:
+                    label.set_fontproperties(font_prop)
+                except Exception:
+                    pass
+            for label in ax.get_yticklabels():
+                try:
+                    label.set_fontproperties(font_prop)
+                except Exception:
+                    pass
             ax.tick_params(axis='x', rotation=45)
             ax.grid(True, alpha=0.3, axis='y')
             plot_idx += 1
@@ -1301,7 +1336,7 @@ class DataPreprocessor:
         dpi : int
             保存時の解像度
         """
-        setup_japanese_font()
+        font_prop = setup_japanese_font()
         
         # 列の識別がまだ行われていない場合は実行
         if not hasattr(self, 'numerical_columns') or not hasattr(self, 'categorical_columns'):
@@ -1331,12 +1366,27 @@ class DataPreprocessor:
         # タイトルを設定（フォント設定後、確実に日本語を表示）
         # japanize-matplotlibが利用可能な場合は自動的に日本語が表示される
         try:
-            ax.set_title('変数間の相関行列', fontsize=14, pad=20)
-        except Exception as e:
+            ax.set_title('変数間の相関行列', fontsize=14, pad=20, fontproperties=font_prop)
+            ax.set_xlabel('相関行列列', fontsize=11, fontproperties=font_prop)
+            ax.set_ylabel('相関行列行', fontsize=11, fontproperties=font_prop)
+        except Exception:
             # フォントが利用できない場合、英語タイトルにフォールバック
             try:
                 ax.set_title('Correlation Matrix', fontsize=14, pad=20)
-            except:
+                ax.set_xlabel('Columns', fontsize=11)
+                ax.set_ylabel('Rows', fontsize=11)
+            except Exception:
+                pass
+        # 軸ラベルにもフォントを強制適用
+        for label in ax.get_xticklabels():
+            try:
+                label.set_fontproperties(font_prop)
+            except Exception:
+                pass
+        for label in ax.get_yticklabels():
+            try:
+                label.set_fontproperties(font_prop)
+            except Exception:
                 pass
         
         plt.tight_layout()
