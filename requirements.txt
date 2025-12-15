@@ -12,4 +12,5 @@ imbalanced-learn>=0.11.0
 category-encoders>=2.6.0
 scikit-plot>=0.3.7
 umap-learn>=0.5.3
+japanize-matplotlib>=1.1.3
 

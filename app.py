@@ -752,10 +752,18 @@ def main():
                 st.session_state['processing_history'] = []
             
             # タブで情報を表示（より直感的な名前）
+            # タブの状態を保持（高度な機能実行後も同じタブに留まる）
+            if 'active_tab' not in st.session_state:
+                st.session_state['active_tab'] = 0
+            
             tab1, tab2, tab3, tab4, tab5 = st.tabs([
                 "データ", "分析", 
                 "前処理", "高度な機能", "履歴"
             ])
+            
+            # タブが変更された場合、セッション状態を更新
+            # 注意: Streamlitでは直接タブのインデックスを取得できないため、
+            # 各タブ内で処理を実行してもページはリロードされないようにする
             
             with tab1:
                 st.markdown("### データの確認と編集")
@@ -1614,8 +1622,12 @@ def main():
                             if st.button("ヒストグラムを表示", key="show_hist"):
                                 try:
                                     import matplotlib.pyplot as plt
-                                    from data_preprocessor import setup_japanese_font
-                                    setup_japanese_font()
+                                    # japanize-matplotlibが利用可能な場合は使用
+                                    try:
+                                        import japanize_matplotlib
+                                    except ImportError:
+                                        from data_preprocessor import setup_japanese_font
+                                        setup_japanese_font()
                                     
                                     data_to_plot = var_data.dropna()
                                     if len(data_to_plot) == 0:
@@ -1638,8 +1650,12 @@ def main():
                             if st.button("箱ひげ図を表示", key="show_box"):
                                 try:
                                     import matplotlib.pyplot as plt
-                                    from data_preprocessor import setup_japanese_font
-                                    setup_japanese_font()
+                                    # japanize-matplotlibが利用可能な場合は使用
+                                    try:
+                                        import japanize_matplotlib
+                                    except ImportError:
+                                        from data_preprocessor import setup_japanese_font
+                                        setup_japanese_font()
                                     
                                     data_to_plot = var_data.dropna()
                                     if len(data_to_plot) == 0:
@@ -1667,8 +1683,12 @@ def main():
                             if other_var != "なし" and st.button("散布図を表示", key="show_scatter"):
                                 try:
                                     import matplotlib.pyplot as plt
-                                    from data_preprocessor import setup_japanese_font
-                                    setup_japanese_font()
+                                    # japanize-matplotlibが利用可能な場合は使用
+                                    try:
+                                        import japanize_matplotlib
+                                    except ImportError:
+                                        from data_preprocessor import setup_japanese_font
+                                        setup_japanese_font()
                                     
                                     scatter_data = st.session_state['current_df'][[selected_var, other_var]].dropna()
                                     if len(scatter_data) == 0:
@@ -1702,8 +1722,12 @@ def main():
                             if st.button("棒グラフを表示", key="show_bar"):
                                 try:
                                     import matplotlib.pyplot as plt
-                                    from data_preprocessor import setup_japanese_font
-                                    setup_japanese_font()
+                                    # japanize-matplotlibが利用可能な場合は使用
+                                    try:
+                                        import japanize_matplotlib
+                                    except ImportError:
+                                        from data_preprocessor import setup_japanese_font
+                                        setup_japanese_font()
                                     
                                     value_counts = var_data.value_counts().head(top_n)
                                     if len(value_counts) == 0:
@@ -1728,8 +1752,12 @@ def main():
                             if st.button("円グラフを表示", key="show_pie"):
                                 try:
                                     import matplotlib.pyplot as plt
-                                    from data_preprocessor import setup_japanese_font
-                                    setup_japanese_font()
+                                    # japanize-matplotlibが利用可能な場合は使用
+                                    try:
+                                        import japanize_matplotlib
+                                    except ImportError:
+                                        from data_preprocessor import setup_japanese_font
+                                        setup_japanese_font()
                                     
                                     value_counts = var_data.value_counts().head(top_n_pie)
                                     if len(value_counts) == 0:
@@ -1761,8 +1789,12 @@ def main():
                                     # 可視化
                                     import matplotlib.pyplot as plt
                                     import seaborn as sns
-                                    from data_preprocessor import setup_japanese_font
-                                    setup_japanese_font()
+                                    # japanize-matplotlibが利用可能な場合は使用
+                                    try:
+                                        import japanize_matplotlib
+                                    except ImportError:
+                                        from data_preprocessor import setup_japanese_font
+                                        setup_japanese_font()
                                     
                                     if crosstab.empty:
                                         st.warning("クロス集計データがありません。")
@@ -2882,8 +2914,39 @@ def main():
                                     action=action
                                 )
                                 df_after = len(st.session_state['current_df'])
+                                
+                                # 処理履歴に記録
+                                import datetime
+                                history_entry = {
+                                    'timestamp': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                                    'operation': '高度な外れ値検出',
+                                    'method': advanced_outlier_method,
+                                    'parameters': {
+                                        'contamination': contamination,
+                                        'action': action
+                                    },
+                                    'before': {'rows': df_before},
+                                    'after': {'rows': df_after},
+                                    'changes': {
+                                        'rows_removed': df_before - df_after
+                                    }
+                                }
+                                st.session_state['processing_history'].append(history_entry)
+                                
                                 st.success(f"✅ 外れ値検出完了: {df_before}行 → {df_after}行")
-                                st.rerun()
+                                
+                                # 詳細結果を表示
+                                with st.expander("処理結果の詳細", expanded=True):
+                                    col1, col2, col3 = st.columns(3)
+                                    with col1:
+                                        st.metric("処理前行数", df_before)
+                                    with col2:
+                                        st.metric("処理後行数", df_after)
+                                    with col3:
+                                        st.metric("削除された行数", df_before - df_after)
+                                    
+                                    st.info(f"**検出方法**: {advanced_outlier_method} | **処理方法**: {action} | **外れ値割合**: {contamination}")
+                                # st.rerun()を削除（ページがリロードされないように）
                             except Exception as e:
                                 st.error(f"エラー: {e}")
                 
@@ -2992,7 +3055,7 @@ def main():
                                                 if len(processed_df.columns) > 20:
                                                     st.write(f"... 他{len(processed_df.columns) - 20}個")
                                         
-                                        st.rerun()
+                                        # st.rerun()を削除（ページがリロードされないように）
                                 except Exception as e:
                                     st.error(f"❌ エラー: {e}")
                                     import traceback

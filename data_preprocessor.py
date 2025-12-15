@@ -21,9 +21,26 @@ import seaborn as sns
 import platform
 import os
 
+# 日本語フォント対応（japanize-matplotlibを使用）
+try:
+    import japanize_matplotlib
+    JAPANIZE_AVAILABLE = True
+except ImportError:
+    JAPANIZE_AVAILABLE = False
+
 # 日本語フォント設定（Mac/Windows/Linux/Streamlit Cloud対応）
 def setup_japanese_font():
     """日本語フォントを自動設定（Mac/Windows/Linux/Streamlit Cloud対応）"""
+    # japanize-matplotlibが利用可能な場合は使用（最も確実）
+    if JAPANIZE_AVAILABLE:
+        try:
+            import japanize_matplotlib
+            # japanize_matplotlibは自動的に日本語フォントを設定する
+            plt.rcParams['axes.unicode_minus'] = False
+            return 'japanize-matplotlib'
+        except Exception as e:
+            pass
+    
     import matplotlib.font_manager as fm
     from matplotlib import font_manager
     
@@ -111,8 +128,17 @@ def setup_japanese_font():
     
     return None
 
-# 日本語フォントを設定
-setup_japanese_font()
+# 日本語フォントを設定（モジュール読み込み時）
+# 注意: japanize-matplotlibが利用可能な場合は自動的に設定される
+if JAPANIZE_AVAILABLE:
+    try:
+        import japanize_matplotlib
+        # japanize_matplotlibは自動的に日本語フォントを設定する
+        plt.rcParams['axes.unicode_minus'] = False
+    except:
+        setup_japanese_font()
+else:
+    setup_japanese_font()
 
 # エンコーディング検出用
 try:
@@ -1281,13 +1307,15 @@ class DataPreprocessor:
                    center=0, square=True, linewidths=1, cbar_kws={"shrink": 0.8}, ax=ax)
         
         # タイトルを設定（フォント設定後、確実に日本語を表示）
+        # japanize-matplotlibが利用可能な場合は自動的に日本語が表示される
         try:
-            # 日本語フォントを再設定（確実に適用）
-            setup_japanese_font()
             ax.set_title('変数間の相関行列', fontsize=14, pad=20)
         except Exception as e:
             # フォントが利用できない場合、英語タイトルにフォールバック
-            ax.set_title('Correlation Matrix', fontsize=14, pad=20)
+            try:
+                ax.set_title('Correlation Matrix', fontsize=14, pad=20)
+            except:
+                pass
         
         plt.tight_layout()
         
