@@ -2172,8 +2172,10 @@ def main():
                                                 st.session_state['active_tab'] = "前処理"
                                         
                                         # 相関行列生成ボタンが押された場合、または既に生成されている場合
+                                        corr_key = 'corr_matrix_image_bytes'
+                                        
                                         if st.session_state.get('generate_corr_matrix', False):
-                                            corr_key = 'corr_matrix_image_bytes'
+                                            # グラフがまだ生成されていない場合
                                             if corr_key not in st.session_state:
                                                 tmp_corr = tempfile.NamedTemporaryFile(delete=False, suffix='.png')
                                                 corr_path = tmp_corr.name
