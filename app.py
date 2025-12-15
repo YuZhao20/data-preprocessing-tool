@@ -2058,33 +2058,58 @@ def main():
                                 st.markdown("---")
                                 st.subheader("データの可視化")
                                 
-                                # 変数が多い場合の警告
-                                num_numeric_cols = len([col for col in preprocessor.numerical_columns if col in processed_df.columns])
-                                
                                 if show_visualization:
+                                    # 列の識別を確実に実行（可視化前に）
+                                    preprocessor.identify_columns(processed_df, categorical_threshold=categorical_threshold)
+                                    num_numeric_cols = len([col for col in preprocessor.numerical_columns if col in processed_df.columns])
+                                    num_categorical_cols = len([col for col in preprocessor.categorical_columns if col in processed_df.columns])
+                                    
                                     # 基本統計量の可視化
-                                    if num_numeric_cols > 0:
+                                    
+                                    if num_numeric_cols > 0 or num_categorical_cols > 0:
                                         if st.checkbox("データ分布を可視化", value=False, key="show_data_viz"):
-                                            with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmp_plot:
-                                                plot_path = tmp_plot.name
+                                            # 一時ファイルを作成
+                                            import tempfile
+                                            tmp_plot = tempfile.NamedTemporaryFile(delete=False, suffix='.png')
+                                            plot_path = tmp_plot.name
+                                            tmp_plot.close()  # ファイルを閉じる（削除されないように）
                                             
                                             try:
-                                                # 列の識別を確実に実行
-                                                preprocessor.identify_columns(processed_df, categorical_threshold=categorical_threshold)
-                                                preprocessor.visualize_data(processed_df, save_path=plot_path)
-                                                if os.path.exists(plot_path) and os.path.getsize(plot_path) > 0:
-                                                    st.image(plot_path, caption="データの分布")
-                                                    # 一時ファイルを削除
-                                                    try:
-                                                        os.remove(plot_path)
-                                                    except:
-                                                        pass
+                                                with st.spinner("データ分布を可視化中..."):
+                                                    preprocessor.visualize_data(processed_df, save_path=plot_path)
+                                                
+                                                # ファイルが存在し、サイズが0より大きいことを確認
+                                                if os.path.exists(plot_path):
+                                                    file_size = os.path.getsize(plot_path)
+                                                    if file_size > 0:
+                                                        st.image(plot_path, caption="データの分布", use_container_width=True)
+                                                    else:
+                                                        st.warning("⚠️ グラフファイルが空です。データに問題がある可能性があります。")
                                                 else:
-                                                    st.warning("グラフファイルが生成されませんでした。データに問題がある可能性があります。")
+                                                    st.warning("⚠️ グラフファイルが生成されませんでした。")
+                                                
+                                                # 一時ファイルを削除
+                                                try:
+                                                    if os.path.exists(plot_path):
+                                                        os.remove(plot_path)
+                                                except Exception as cleanup_error:
+                                                    pass  # クリーンアップエラーは無視
+                                                    
+                                            except ValueError as ve:
+                                                st.warning(f"⚠️ {str(ve)}")
                                             except Exception as e:
-                                                st.warning(f"グラフの生成中にエラーが発生しました: {e}")
+                                                st.error(f"❌ グラフの生成中にエラーが発生しました: {str(e)}")
                                                 import traceback
-                                                st.code(traceback.format_exc())
+                                                with st.expander("詳細なエラー情報", expanded=False):
+                                                    st.code(traceback.format_exc())
+                                                # エラー時も一時ファイルを削除
+                                                try:
+                                                    if os.path.exists(plot_path):
+                                                        os.remove(plot_path)
+                                                except:
+                                                    pass
+                                    else:
+                                        st.info("ℹ️ 可視化する数値変数またはカテゴリ変数が見つかりませんでした。")
                                     
                                     # 相関行列（変数が多い場合は警告）
                                     if num_numeric_cols >= 2:
