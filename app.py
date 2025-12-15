@@ -2094,8 +2094,16 @@ def main():
                                     # 基本統計量の可視化
                                     
                                     if num_numeric_cols > 0 or num_categorical_cols > 0:
-                                        show_viz = st.checkbox("データ分布を可視化", value=False, key="show_data_viz")
-                                        if show_viz:
+                                        # ボタンを使用してグラフを生成（タブが変わらないように）
+                                        col_viz1, col_viz2 = st.columns([3, 1])
+                                        with col_viz1:
+                                            st.markdown("**データ分布の可視化**")
+                                        with col_viz2:
+                                            if st.button("グラフを生成", key="btn_data_viz", use_container_width=True):
+                                                st.session_state['generate_data_viz'] = True
+                                        
+                                        # グラフ生成ボタンが押された場合、または既に生成されている場合
+                                        if st.session_state.get('generate_data_viz', False):
                                             viz_key = 'data_viz_image_bytes'
                                             if viz_key not in st.session_state:
                                                 tmp_plot = tempfile.NamedTemporaryFile(delete=False, suffix='.png')
