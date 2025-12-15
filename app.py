@@ -2096,7 +2096,6 @@ def main():
                                     if num_numeric_cols > 0 or num_categorical_cols > 0:
                                         if st.checkbox("データ分布を可視化", value=False, key="show_data_viz"):
                                             # 一時ファイルを作成
-                                            import tempfile
                                             tmp_plot = tempfile.NamedTemporaryFile(delete=False, suffix='.png')
                                             plot_path = tmp_plot.name
                                             tmp_plot.close()  # ファイルを閉じる（削除されないように）
