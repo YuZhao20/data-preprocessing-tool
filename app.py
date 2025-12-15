@@ -2094,46 +2094,52 @@ def main():
                                     # 基本統計量の可視化
                                     
                                     if num_numeric_cols > 0 or num_categorical_cols > 0:
-                                        if st.checkbox("データ分布を可視化", value=False, key="show_data_viz"):
-                                            # 一時ファイルを作成
-                                            tmp_plot = tempfile.NamedTemporaryFile(delete=False, suffix='.png')
-                                            plot_path = tmp_plot.name
-                                            tmp_plot.close()  # ファイルを閉じる（削除されないように）
-                                            
-                                            try:
-                                                with st.spinner("データ分布を可視化中..."):
-                                                    preprocessor.visualize_data(processed_df, save_path=plot_path)
+                                        show_viz = st.checkbox("データ分布を可視化", value=False, key="show_data_viz")
+                                        if show_viz:
+                                            # セッション状態に保存された画像パスを確認
+                                            viz_key = 'data_viz_image_path'
+                                            if viz_key not in st.session_state or not os.path.exists(st.session_state.get(viz_key, '')):
+                                                # 一時ファイルを作成
+                                                tmp_plot = tempfile.NamedTemporaryFile(delete=False, suffix='.png')
+                                                plot_path = tmp_plot.name
+                                                tmp_plot.close()  # ファイルを閉じる（削除されないように）
                                                 
-                                                # ファイルが存在し、サイズが0より大きいことを確認
-                                                if os.path.exists(plot_path):
-                                                    file_size = os.path.getsize(plot_path)
-                                                    if file_size > 0:
-                                                        st.image(plot_path, caption="データの分布", use_container_width=True)
-                                                    else:
-                                                        st.warning("⚠️ グラフファイルが空です。データに問題がある可能性があります。")
-                                                else:
-                                                    st.warning("⚠️ グラフファイルが生成されませんでした。")
-                                                
-                                                # 一時ファイルを削除
                                                 try:
-                                                    if os.path.exists(plot_path):
-                                                        os.remove(plot_path)
-                                                except Exception as cleanup_error:
-                                                    pass  # クリーンアップエラーは無視
+                                                    with st.spinner("データ分布を可視化中..."):
+                                                        preprocessor.visualize_data(processed_df, save_path=plot_path)
                                                     
-                                            except ValueError as ve:
-                                                st.warning(f"⚠️ {str(ve)}")
-                                            except Exception as e:
-                                                st.error(f"❌ グラフの生成中にエラーが発生しました: {str(e)}")
-                                                import traceback
-                                                with st.expander("詳細なエラー情報", expanded=False):
-                                                    st.code(traceback.format_exc())
-                                                # エラー時も一時ファイルを削除
-                                                try:
+                                                    # ファイルが存在し、サイズが0より大きいことを確認
                                                     if os.path.exists(plot_path):
-                                                        os.remove(plot_path)
-                                                except:
-                                                    pass
+                                                        file_size = os.path.getsize(plot_path)
+                                                        if file_size > 0:
+                                                            # セッション状態に保存
+                                                            st.session_state[viz_key] = plot_path
+                                                        else:
+                                                            st.warning("⚠️ グラフファイルが空です。データに問題がある可能性があります。")
+                                                            try:
+                                                                os.remove(plot_path)
+                                                            except:
+                                                                pass
+                                                    else:
+                                                        st.warning("⚠️ グラフファイルが生成されませんでした。")
+                                                        
+                                                except ValueError as ve:
+                                                    st.warning(f"⚠️ {str(ve)}")
+                                                except Exception as e:
+                                                    st.error(f"❌ グラフの生成中にエラーが発生しました: {str(e)}")
+                                                    import traceback
+                                                    with st.expander("詳細なエラー情報", expanded=False):
+                                                        st.code(traceback.format_exc())
+                                                    # エラー時も一時ファイルを削除
+                                                    try:
+                                                        if 'plot_path' in locals() and os.path.exists(plot_path):
+                                                            os.remove(plot_path)
+                                                    except:
+                                                        pass
+                                            
+                                            # 保存された画像を表示
+                                            if viz_key in st.session_state and os.path.exists(st.session_state[viz_key]):
+                                                st.image(st.session_state[viz_key], caption="データの分布", use_container_width=True)
                                     else:
                                         st.info("ℹ️ 可視化する数値変数またはカテゴリ変数が見つかりませんでした。")
                                     
