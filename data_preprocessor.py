@@ -1132,7 +1132,7 @@ class DataPreprocessor:
         dpi : int
             保存時の解像度
         """
-        # 日本語フォントを再設定
+        # 日本語フォントを再設定（確実に適用）
         setup_japanese_font()
         
         # 数値変数とカテゴリ変数を取得
@@ -1172,9 +1172,15 @@ class DataPreprocessor:
                 break
             ax = axes[plot_idx]
             df[col].hist(bins=30, ax=ax, edgecolor='black')
-            ax.set_title(f'{col}の分布', fontsize=12)
-            ax.set_xlabel(col, fontsize=10)
-            ax.set_ylabel('頻度', fontsize=10)
+            try:
+                ax.set_title(f'{col}の分布', fontsize=12)
+                ax.set_xlabel(col, fontsize=10)
+                ax.set_ylabel('頻度', fontsize=10)
+            except:
+                # フォントが利用できない場合、英語ラベルにフォールバック
+                ax.set_title(f'Distribution of {col}', fontsize=12)
+                ax.set_xlabel(col, fontsize=10)
+                ax.set_ylabel('Frequency', fontsize=10)
             ax.grid(True, alpha=0.3)
             plot_idx += 1
         
@@ -1185,9 +1191,15 @@ class DataPreprocessor:
             ax = axes[plot_idx]
             value_counts = df[col].value_counts().head(10)
             value_counts.plot(kind='bar', ax=ax, color='steelblue', edgecolor='black')
-            ax.set_title(f'{col}の分布', fontsize=12)
-            ax.set_xlabel(col, fontsize=10)
-            ax.set_ylabel('頻度', fontsize=10)
+            try:
+                ax.set_title(f'{col}の分布', fontsize=12)
+                ax.set_xlabel(col, fontsize=10)
+                ax.set_ylabel('頻度', fontsize=10)
+            except:
+                # フォントが利用できない場合、英語ラベルにフォールバック
+                ax.set_title(f'Distribution of {col}', fontsize=12)
+                ax.set_xlabel(col, fontsize=10)
+                ax.set_ylabel('Frequency', fontsize=10)
             ax.tick_params(axis='x', rotation=45)
             ax.grid(True, alpha=0.3, axis='y')
             plot_idx += 1
@@ -1235,9 +1247,20 @@ class DataPreprocessor:
         
         # ヒートマップを作成
         fig, ax = plt.subplots(figsize=figsize)
+        
+        # 日本語フォントを再設定（確実に適用）
+        setup_japanese_font()
+        
         sns.heatmap(corr_matrix, annot=True, fmt='.2f', cmap='coolwarm', 
                    center=0, square=True, linewidths=1, cbar_kws={"shrink": 0.8}, ax=ax)
-        ax.set_title('変数間の相関行列', fontsize=14, pad=20)
+        
+        # タイトルを設定（フォント設定後）
+        try:
+            ax.set_title('変数間の相関行列', fontsize=14, pad=20)
+        except:
+            # フォントが利用できない場合、英語タイトルにフォールバック
+            ax.set_title('Correlation Matrix', fontsize=14, pad=20)
+        
         plt.tight_layout()
         
         if save_path:
@@ -1286,9 +1309,15 @@ class DataPreprocessor:
         # パーセンテージ
         missing_pct = (missing_data / len(df) * 100).sort_values(ascending=False)
         missing_pct.plot(kind='bar', ax=ax2, color='steelblue', edgecolor='black')
-        ax2.set_title('欠損値の割合 (%)', fontsize=12)
-        ax2.set_xlabel('変数名', fontsize=10)
-        ax2.set_ylabel('欠損値の割合 (%)', fontsize=10)
+        try:
+            ax2.set_title('欠損値の割合 (%)', fontsize=12)
+            ax2.set_xlabel('変数名', fontsize=10)
+            ax2.set_ylabel('欠損値の割合 (%)', fontsize=10)
+        except:
+            # フォントが利用できない場合、英語ラベルにフォールバック
+            ax2.set_title('Missing Value Percentage (%)', fontsize=12)
+            ax2.set_xlabel('Variable Name', fontsize=10)
+            ax2.set_ylabel('Missing Value Percentage (%)', fontsize=10)
         ax2.tick_params(axis='x', rotation=45)
         ax2.grid(True, alpha=0.3, axis='y')
         
