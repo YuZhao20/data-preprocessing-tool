@@ -2124,6 +2124,11 @@ def main():
                                                         pass
                                             if viz_key in st.session_state:
                                                 st.image(st.session_state[viz_key], caption="データの分布", use_container_width=True)
+                                                # グラフを非表示にするボタン
+                                                if st.button("グラフを非表示", key="hide_data_viz"):
+                                                    st.session_state['generate_data_viz'] = False
+                                                    if viz_key in st.session_state:
+                                                        del st.session_state[viz_key]
                                     else:
                                         st.info("ℹ️ 可視化する数値変数またはカテゴリ変数が見つかりませんでした。")
                                     
@@ -2132,13 +2137,16 @@ def main():
                                         if num_numeric_cols > 20:
                                             st.warning(f"⚠️ 変数が{num_numeric_cols}個あります。相関行列の表示には時間がかかる場合があります。")
                                         
-                                        # チェックボックスの状態を取得（デフォルトはセッション状態から）
-                                        default_corr = st.session_state.get('show_corr_matrix', num_numeric_cols <= 10)
-                                        show_corr = st.checkbox("相関行列を表示", value=default_corr, key="show_corr_matrix")
-                                        # セッション状態に保存（タブが変わらないように）
-                                        st.session_state['show_corr_matrix'] = show_corr
+                                        # ボタンを使用して相関行列を生成（タブが変わらないように）
+                                        col_corr1, col_corr2 = st.columns([3, 1])
+                                        with col_corr1:
+                                            st.markdown("**相関行列の可視化**")
+                                        with col_corr2:
+                                            if st.button("相関行列を生成", key="btn_corr_matrix", use_container_width=True):
+                                                st.session_state['generate_corr_matrix'] = True
                                         
-                                        if show_corr:
+                                        # 相関行列生成ボタンが押された場合、または既に生成されている場合
+                                        if st.session_state.get('generate_corr_matrix', False):
                                             corr_key = 'corr_matrix_image_bytes'
                                             if corr_key not in st.session_state:
                                                 tmp_corr = tempfile.NamedTemporaryFile(delete=False, suffix='.png')
