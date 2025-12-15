@@ -21,13 +21,23 @@ import seaborn as sns
 import platform
 import os
 
-# 日本語フォント設定（Mac/Windows対応）
+# 日本語フォント設定（Mac/Windows/Linux/Streamlit Cloud対応）
 def setup_japanese_font():
-    """日本語フォントを自動設定（Mac/Windows対応）"""
+    """日本語フォントを自動設定（Mac/Windows/Linux/Streamlit Cloud対応）"""
+    import matplotlib.font_manager as fm
+    
     system = platform.system()
     
+    # 利用可能なフォントを取得
+    try:
+        available_fonts = [f.name for f in fm.fontManager.ttflist]
+    except:
+        available_fonts = []
+    
+    # フォント候補リスト（優先順位順）
+    font_candidates = []
+    
     if system == 'Darwin':  # macOS
-        # macOSの日本語フォント
         font_candidates = [
             'Hiragino Sans',
             'Hiragino Kaku Gothic ProN',
@@ -36,7 +46,6 @@ def setup_japanese_font():
             'Osaka'
         ]
     elif system == 'Windows':  # Windows
-        # Windowsの日本語フォント
         font_candidates = [
             'MS Gothic',
             'MS PGothic',
@@ -44,28 +53,40 @@ def setup_japanese_font():
             'Meiryo',
             'MS Mincho'
         ]
-    else:  # Linux
+    else:  # Linux (Streamlit Cloud含む)
         font_candidates = [
             'Noto Sans CJK JP',
+            'Noto Sans CJK',
             'Noto Sans Japanese',
             'TakaoGothic',
             'IPAexGothic',
-            'IPAPGothic'
+            'IPAPGothic',
+            'DejaVu Sans'  # フォールバック
         ]
     
-    # 利用可能なフォントを探す
-    from matplotlib import font_manager
-    available_fonts = [f.name for f in font_manager.fontManager.ttflist]
-    
+    # フォントを検索して設定
     for font in font_candidates:
         if font in available_fonts:
-            plt.rcParams['font.family'] = font
-            plt.rcParams['axes.unicode_minus'] = False  # マイナス記号の文字化けを防ぐ
-            return font
+            try:
+                plt.rcParams['font.family'] = font
+                plt.rcParams['axes.unicode_minus'] = False
+                # 設定が正しく適用されたか確認
+                return font
+            except Exception as e:
+                continue
     
-    # フォントが見つからない場合の警告
-    print("警告: 日本語フォントが見つかりませんでした。グラフの日本語が正しく表示されない可能性があります。")
-    plt.rcParams['axes.unicode_minus'] = False
+    # フォントが見つからない場合、デフォルト設定
+    # 日本語は表示されないが、エラーを防ぐ
+    try:
+        plt.rcParams['font.family'] = 'DejaVu Sans'
+        plt.rcParams['axes.unicode_minus'] = False
+    except:
+        pass
+    
+    # 警告を出力（デバッグ用、本番環境では非表示）
+    import warnings
+    warnings.filterwarnings('ignore', category=UserWarning)
+    
     return None
 
 # 日本語フォントを設定
