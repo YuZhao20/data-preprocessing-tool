@@ -2109,10 +2109,15 @@ def main():
                                         with col_viz2:
                                             if st.button("グラフを生成", key="btn_data_viz", use_container_width=True):
                                                 st.session_state['generate_data_viz'] = True
+                                                # タブ状態を明示的に保持
+                                                st.session_state['active_tab'] = "前処理"
                                         
                                         # グラフ生成ボタンが押された場合、または既に生成されている場合
+                                        viz_key = 'data_viz_image_bytes'
+                                        
+                                        # ボタンがクリックされた、または既に生成されている場合
                                         if st.session_state.get('generate_data_viz', False):
-                                            viz_key = 'data_viz_image_bytes'
+                                            # グラフがまだ生成されていない場合
                                             if viz_key not in st.session_state:
                                                 tmp_plot = tempfile.NamedTemporaryFile(delete=False, suffix='.png')
                                                 plot_path = tmp_plot.name
@@ -2123,6 +2128,7 @@ def main():
                                                     if os.path.exists(plot_path) and os.path.getsize(plot_path) > 0:
                                                         with open(plot_path, 'rb') as f:
                                                             st.session_state[viz_key] = f.read()
+                                                        st.success("✅ グラフが生成されました")
                                                     else:
                                                         st.warning("⚠️ グラフファイルが生成されませんでした。")
                                                 except ValueError as ve:
@@ -2138,6 +2144,8 @@ def main():
                                                             os.remove(plot_path)
                                                     except Exception:
                                                         pass
+                                            
+                                            # グラフが生成されている場合、表示
                                             if viz_key in st.session_state:
                                                 st.image(st.session_state[viz_key], caption="データの分布", use_container_width=True)
                                                 # グラフを非表示にするボタン
