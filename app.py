@@ -2096,33 +2096,19 @@ def main():
                                     if num_numeric_cols > 0 or num_categorical_cols > 0:
                                         show_viz = st.checkbox("データ分布を可視化", value=False, key="show_data_viz")
                                         if show_viz:
-                                            # セッション状態に保存された画像パスを確認
-                                            viz_key = 'data_viz_image_path'
-                                            if viz_key not in st.session_state or not os.path.exists(st.session_state.get(viz_key, '')):
-                                                # 一時ファイルを作成
+                                            viz_key = 'data_viz_image_bytes'
+                                            if viz_key not in st.session_state:
                                                 tmp_plot = tempfile.NamedTemporaryFile(delete=False, suffix='.png')
                                                 plot_path = tmp_plot.name
-                                                tmp_plot.close()  # ファイルを閉じる（削除されないように）
-                                                
+                                                tmp_plot.close()
                                                 try:
                                                     with st.spinner("データ分布を可視化中..."):
                                                         preprocessor.visualize_data(processed_df, save_path=plot_path)
-                                                    
-                                                    # ファイルが存在し、サイズが0より大きいことを確認
-                                                    if os.path.exists(plot_path):
-                                                        file_size = os.path.getsize(plot_path)
-                                                        if file_size > 0:
-                                                            # セッション状態に保存
-                                                            st.session_state[viz_key] = plot_path
-                                                        else:
-                                                            st.warning("⚠️ グラフファイルが空です。データに問題がある可能性があります。")
-                                                            try:
-                                                                os.remove(plot_path)
-                                                            except:
-                                                                pass
+                                                    if os.path.exists(plot_path) and os.path.getsize(plot_path) > 0:
+                                                        with open(plot_path, 'rb') as f:
+                                                            st.session_state[viz_key] = f.read()
                                                     else:
                                                         st.warning("⚠️ グラフファイルが生成されませんでした。")
-                                                        
                                                 except ValueError as ve:
                                                     st.warning(f"⚠️ {str(ve)}")
                                                 except Exception as e:
@@ -2130,15 +2116,13 @@ def main():
                                                     import traceback
                                                     with st.expander("詳細なエラー情報", expanded=False):
                                                         st.code(traceback.format_exc())
-                                                    # エラー時も一時ファイルを削除
+                                                finally:
                                                     try:
-                                                        if 'plot_path' in locals() and os.path.exists(plot_path):
+                                                        if os.path.exists(plot_path):
                                                             os.remove(plot_path)
-                                                    except:
+                                                    except Exception:
                                                         pass
-                                            
-                                            # 保存された画像を表示
-                                            if viz_key in st.session_state and os.path.exists(st.session_state[viz_key]):
+                                            if viz_key in st.session_state:
                                                 st.image(st.session_state[viz_key], caption="データの分布", use_container_width=True)
                                     else:
                                         st.info("ℹ️ 可視化する数値変数またはカテゴリ変数が見つかりませんでした。")
@@ -2150,35 +2134,20 @@ def main():
                                         
                                         show_corr = st.checkbox("相関行列を表示", value=(num_numeric_cols <= 10), key="show_corr_matrix")
                                         if show_corr:
-                                            # セッション状態に保存された画像パスを確認
-                                            corr_key = 'corr_matrix_image_path'
-                                            if corr_key not in st.session_state or not os.path.exists(st.session_state.get(corr_key, '')):
-                                                # 一時ファイルを作成
+                                            corr_key = 'corr_matrix_image_bytes'
+                                            if corr_key not in st.session_state:
                                                 tmp_corr = tempfile.NamedTemporaryFile(delete=False, suffix='.png')
                                                 corr_path = tmp_corr.name
-                                                tmp_corr.close()  # ファイルを閉じる（削除されないように）
-                                                
+                                                tmp_corr.close()
                                                 try:
                                                     with st.spinner("相関行列を計算中..."):
-                                                        # 列の識別を確実に実行
                                                         preprocessor.identify_columns(processed_df, categorical_threshold=categorical_threshold)
                                                         preprocessor.visualize_correlation(processed_df, save_path=corr_path)
-                                                    
-                                                    # ファイルが存在し、サイズが0より大きいことを確認
-                                                    if os.path.exists(corr_path):
-                                                        file_size = os.path.getsize(corr_path)
-                                                        if file_size > 0:
-                                                            # セッション状態に保存
-                                                            st.session_state[corr_key] = corr_path
-                                                        else:
-                                                            st.warning("⚠️ 相関行列のグラフファイルが空です。")
-                                                            try:
-                                                                os.remove(corr_path)
-                                                            except:
-                                                                pass
+                                                    if os.path.exists(corr_path) and os.path.getsize(corr_path) > 0:
+                                                        with open(corr_path, 'rb') as f:
+                                                            st.session_state[corr_key] = f.read()
                                                     else:
                                                         st.warning("⚠️ 相関行列のグラフファイルが生成されませんでした。数値変数が不足している可能性があります。")
-                                                        
                                                 except ValueError as ve:
                                                     st.warning(f"⚠️ {str(ve)}")
                                                 except Exception as e:
@@ -2186,15 +2155,14 @@ def main():
                                                     import traceback
                                                     with st.expander("詳細なエラー情報", expanded=False):
                                                         st.code(traceback.format_exc())
-                                                    # エラー時も一時ファイルを削除
+                                                finally:
                                                     try:
-                                                        if 'corr_path' in locals() and os.path.exists(corr_path):
+                                                        if os.path.exists(corr_path):
                                                             os.remove(corr_path)
-                                                    except:
+                                                    except Exception:
                                                         pass
                                             
-                                            # 保存された画像を表示
-                                            if corr_key in st.session_state and os.path.exists(st.session_state[corr_key]):
+                                            if corr_key in st.session_state:
                                                 st.image(st.session_state[corr_key], caption="相関行列", use_container_width=True)
                                                 
                                                 # 相関係数の高いペアを表示（オプション）
