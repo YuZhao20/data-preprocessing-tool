@@ -1183,13 +1183,21 @@ class DataPreprocessor:
         # 日本語フォントを再設定（確実に適用）
         setup_japanese_font()
         
+        # 列の識別がまだ行われていない場合は実行
+        if not hasattr(self, 'numerical_columns') or not hasattr(self, 'categorical_columns'):
+            self.identify_columns(df)
+        
         # 数値変数とカテゴリ変数を取得
         num_cols = [col for col in self.numerical_columns if col in df.columns]
         cat_cols = [col for col in self.categorical_columns if col in df.columns]
         
         if len(num_cols) == 0 and len(cat_cols) == 0:
-            print("可視化する変数がありません。identify_columns()を先に実行してください。")
-            return
+            # 列の識別を再試行
+            self.identify_columns(df)
+            num_cols = [col for col in self.numerical_columns if col in df.columns]
+            cat_cols = [col for col in self.categorical_columns if col in df.columns]
+            if len(num_cols) == 0 and len(cat_cols) == 0:
+                raise ValueError("可視化する変数がありません。データに数値変数またはカテゴリ変数が含まれていることを確認してください。")
         
         # 図を作成
         n_plots = 0
@@ -1263,8 +1271,15 @@ class DataPreprocessor:
         plt.tight_layout()
         
         if save_path:
-            fig.savefig(save_path, dpi=dpi, bbox_inches='tight')
-            print(f"グラフを保存しました: {save_path}")
+            try:
+                fig.savefig(save_path, dpi=dpi, bbox_inches='tight', facecolor='white')
+                # ファイルが正しく保存されたか確認
+                if not os.path.exists(save_path) or os.path.getsize(save_path) == 0:
+                    raise IOError(f"グラフファイルの保存に失敗しました: {save_path}")
+            except Exception as e:
+                plt.close(fig)
+                plt.clf()
+                raise IOError(f"グラフの保存中にエラーが発生しました: {e}")
         else:
             plt.show()
         
@@ -1288,11 +1303,18 @@ class DataPreprocessor:
         """
         setup_japanese_font()
         
+        # 列の識別がまだ行われていない場合は実行
+        if not hasattr(self, 'numerical_columns') or not hasattr(self, 'categorical_columns'):
+            self.identify_columns(df)
+        
         num_cols = [col for col in self.numerical_columns if col in df.columns]
         
         if len(num_cols) < 2:
-            print("相関行列を作成するには、少なくとも2つの数値変数が必要です。")
-            return
+            # 列の識別を再試行
+            self.identify_columns(df)
+            num_cols = [col for col in self.numerical_columns if col in df.columns]
+            if len(num_cols) < 2:
+                raise ValueError("相関行列を作成するには、少なくとも2つの数値変数が必要です。")
         
         # 相関行列を計算
         corr_matrix = df[num_cols].corr()
@@ -1320,8 +1342,15 @@ class DataPreprocessor:
         plt.tight_layout()
         
         if save_path:
-            fig.savefig(save_path, dpi=dpi, bbox_inches='tight')
-            print(f"相関行列を保存しました: {save_path}")
+            try:
+                fig.savefig(save_path, dpi=dpi, bbox_inches='tight', facecolor='white')
+                # ファイルが正しく保存されたか確認
+                if not os.path.exists(save_path) or os.path.getsize(save_path) == 0:
+                    raise IOError(f"相関行列ファイルの保存に失敗しました: {save_path}")
+            except Exception as e:
+                plt.close(fig)
+                plt.clf()
+                raise IOError(f"相関行列の保存中にエラーが発生しました: {e}")
         else:
             plt.show()
         

@@ -2069,14 +2069,18 @@ def main():
                                                 plot_path = tmp_plot.name
                                             
                                             try:
+                                                # 列の識別を確実に実行
+                                                preprocessor.identify_columns(processed_df, categorical_threshold=categorical_threshold)
                                                 preprocessor.visualize_data(processed_df, save_path=plot_path)
-                                                if os.path.exists(plot_path):
+                                                if os.path.exists(plot_path) and os.path.getsize(plot_path) > 0:
                                                     st.image(plot_path, caption="データの分布")
                                                     # 一時ファイルを削除
                                                     try:
                                                         os.remove(plot_path)
                                                     except:
                                                         pass
+                                                else:
+                                                    st.warning("グラフファイルが生成されませんでした。データに問題がある可能性があります。")
                                             except Exception as e:
                                                 st.warning(f"グラフの生成中にエラーが発生しました: {e}")
                                                 import traceback
@@ -2093,14 +2097,22 @@ def main():
                                             
                                             try:
                                                 with st.spinner("相関行列を計算中..."):
+                                                    # 列の識別を確実に実行
+                                                    preprocessor.identify_columns(processed_df, categorical_threshold=categorical_threshold)
                                                     preprocessor.visualize_correlation(processed_df, save_path=corr_path)
-                                                if os.path.exists(corr_path):
+                                                if os.path.exists(corr_path) and os.path.getsize(corr_path) > 0:
                                                     st.image(corr_path, caption="相関行列")
                                                     # 一時ファイルを削除
                                                     try:
                                                         os.remove(corr_path)
                                                     except:
                                                         pass
+                                                else:
+                                                    st.warning("相関行列のグラフファイルが生成されませんでした。数値変数が不足している可能性があります。")
+                                            except Exception as e:
+                                                st.warning(f"相関行列の生成中にエラーが発生しました: {e}")
+                                                import traceback
+                                                st.code(traceback.format_exc())
                                                 
                                                 # 相関係数の高いペアを表示（オプション）
                                                 if st.checkbox("相関係数の高い変数ペアを表示", value=False, key="show_high_corr"):
