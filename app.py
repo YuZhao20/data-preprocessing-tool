@@ -2132,7 +2132,12 @@ def main():
                                         if num_numeric_cols > 20:
                                             st.warning(f"⚠️ 変数が{num_numeric_cols}個あります。相関行列の表示には時間がかかる場合があります。")
                                         
-                                        show_corr = st.checkbox("相関行列を表示", value=(num_numeric_cols <= 10), key="show_corr_matrix")
+                                        # チェックボックスの状態を取得（デフォルトはセッション状態から）
+                                        default_corr = st.session_state.get('show_corr_matrix', num_numeric_cols <= 10)
+                                        show_corr = st.checkbox("相関行列を表示", value=default_corr, key="show_corr_matrix")
+                                        # セッション状態に保存（タブが変わらないように）
+                                        st.session_state['show_corr_matrix'] = show_corr
+                                        
                                         if show_corr:
                                             corr_key = 'corr_matrix_image_bytes'
                                             if corr_key not in st.session_state:
