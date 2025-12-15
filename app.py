@@ -769,6 +769,33 @@ def main():
                 st.markdown("### データの確認と編集")
                 st.caption("データの内容を確認し、必要に応じて編集できます")
                 
+                # 処理済みデータのダウンロード（現在のデータフレーム）
+                if 'current_df' in st.session_state and st.session_state['current_df'] is not None:
+                    st.markdown("#### 処理済みデータのダウンロード")
+                    df_dl = st.session_state['current_df']
+                    
+                    # CSV
+                    csv_bytes = df_dl.to_csv(index=False, encoding='utf-8-sig').encode('utf-8-sig')
+                    st.download_button(
+                        label="CSVでダウンロード",
+                        data=csv_bytes,
+                        file_name="processed_data.csv",
+                        mime="text/csv",
+                        key="download_csv_current"
+                    )
+                    
+                    # Excel
+                    import io
+                    excel_buffer = io.BytesIO()
+                    df_dl.to_excel(excel_buffer, index=False, engine='openpyxl')
+                    st.download_button(
+                        label="Excelでダウンロード",
+                        data=excel_buffer.getvalue(),
+                        file_name="processed_data.xlsx",
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        key="download_xlsx_current"
+                    )
+                
                 # 編集モードの選択
                 edit_mode = st.radio(
                     "表示モード",
