@@ -2218,8 +2218,6 @@ def main():
                                                             corr_df = pd.DataFrame(corr_pairs)
                                                             corr_df = corr_df.sort_values('相関係数', key=abs, ascending=False)
                                                             st.dataframe(corr_df.head(20), use_container_width=True)
-                                            except Exception as e:
-                                                st.warning(f"相関行列の生成中にエラーが発生しました: {e}")
                                 else:
                                     st.info("💡 可視化を表示するには、サイドバーの「グラフを表示」にチェックを入れてください。")
                                 
