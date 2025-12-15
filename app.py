@@ -2148,28 +2148,54 @@ def main():
                                         if num_numeric_cols > 20:
                                             st.warning(f"⚠️ 変数が{num_numeric_cols}個あります。相関行列の表示には時間がかかる場合があります。")
                                         
-                                        if st.checkbox("相関行列を表示", value=(num_numeric_cols <= 10), key="show_corr_matrix"):
-                                            with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmp_corr:
+                                        show_corr = st.checkbox("相関行列を表示", value=(num_numeric_cols <= 10), key="show_corr_matrix")
+                                        if show_corr:
+                                            # セッション状態に保存された画像パスを確認
+                                            corr_key = 'corr_matrix_image_path'
+                                            if corr_key not in st.session_state or not os.path.exists(st.session_state.get(corr_key, '')):
+                                                # 一時ファイルを作成
+                                                tmp_corr = tempfile.NamedTemporaryFile(delete=False, suffix='.png')
                                                 corr_path = tmp_corr.name
-                                            
-                                            try:
-                                                with st.spinner("相関行列を計算中..."):
-                                                    # 列の識別を確実に実行
-                                                    preprocessor.identify_columns(processed_df, categorical_threshold=categorical_threshold)
-                                                    preprocessor.visualize_correlation(processed_df, save_path=corr_path)
-                                                if os.path.exists(corr_path) and os.path.getsize(corr_path) > 0:
-                                                    st.image(corr_path, caption="相関行列")
-                                                    # 一時ファイルを削除
+                                                tmp_corr.close()  # ファイルを閉じる（削除されないように）
+                                                
+                                                try:
+                                                    with st.spinner("相関行列を計算中..."):
+                                                        # 列の識別を確実に実行
+                                                        preprocessor.identify_columns(processed_df, categorical_threshold=categorical_threshold)
+                                                        preprocessor.visualize_correlation(processed_df, save_path=corr_path)
+                                                    
+                                                    # ファイルが存在し、サイズが0より大きいことを確認
+                                                    if os.path.exists(corr_path):
+                                                        file_size = os.path.getsize(corr_path)
+                                                        if file_size > 0:
+                                                            # セッション状態に保存
+                                                            st.session_state[corr_key] = corr_path
+                                                        else:
+                                                            st.warning("⚠️ 相関行列のグラフファイルが空です。")
+                                                            try:
+                                                                os.remove(corr_path)
+                                                            except:
+                                                                pass
+                                                    else:
+                                                        st.warning("⚠️ 相関行列のグラフファイルが生成されませんでした。数値変数が不足している可能性があります。")
+                                                        
+                                                except ValueError as ve:
+                                                    st.warning(f"⚠️ {str(ve)}")
+                                                except Exception as e:
+                                                    st.error(f"❌ 相関行列の生成中にエラーが発生しました: {str(e)}")
+                                                    import traceback
+                                                    with st.expander("詳細なエラー情報", expanded=False):
+                                                        st.code(traceback.format_exc())
+                                                    # エラー時も一時ファイルを削除
                                                     try:
-                                                        os.remove(corr_path)
+                                                        if 'corr_path' in locals() and os.path.exists(corr_path):
+                                                            os.remove(corr_path)
                                                     except:
                                                         pass
-                                                else:
-                                                    st.warning("相関行列のグラフファイルが生成されませんでした。数値変数が不足している可能性があります。")
-                                            except Exception as e:
-                                                st.warning(f"相関行列の生成中にエラーが発生しました: {e}")
-                                                import traceback
-                                                st.code(traceback.format_exc())
+                                            
+                                            # 保存された画像を表示
+                                            if corr_key in st.session_state and os.path.exists(st.session_state[corr_key]):
+                                                st.image(st.session_state[corr_key], caption="相関行列", use_container_width=True)
                                                 
                                                 # 相関係数の高いペアを表示（オプション）
                                                 if st.checkbox("相関係数の高い変数ペアを表示", value=False, key="show_high_corr"):
