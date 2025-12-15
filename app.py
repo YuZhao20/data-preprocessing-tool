@@ -760,15 +760,15 @@ def main():
             # 現在のタブのインデックスを取得
             current_index = tab_options.index(st.session_state['active_tab']) if st.session_state['active_tab'] in tab_options else 0
             
+            # タブ選択（keyを削除して、indexのみで制御）
             selected_tab = st.radio(
                 "タブを選択",
                 tab_options,
                 index=current_index,
                 horizontal=True,
-                key="tab_selector",
                 label_visibility="collapsed"
             )
-            # タブが変更された場合のみ更新（ボタンクリック時は変更しない）
+            # タブが変更された場合のみ更新
             if selected_tab != st.session_state.get('active_tab'):
                 st.session_state['active_tab'] = selected_tab
             
