@@ -751,21 +751,23 @@ def main():
             if 'processing_history' not in st.session_state:
                 st.session_state['processing_history'] = []
             
-            # タブで情報を表示（より直感的な名前）
-            # タブの状態を保持（高度な機能実行後も同じタブに留まる）
+            # カスタムタブナビゲーション（タブの状態を保持）
             if 'active_tab' not in st.session_state:
-                st.session_state['active_tab'] = 0
+                st.session_state['active_tab'] = "データ"
             
-            tab1, tab2, tab3, tab4, tab5 = st.tabs([
-                "データ", "分析", 
-                "前処理", "高度な機能", "履歴"
-            ])
+            # タブ選択UI
+            tab_options = ["データ", "分析", "前処理", "高度な機能", "履歴"]
+            selected_tab = st.radio(
+                "タブを選択",
+                tab_options,
+                horizontal=True,
+                key="tab_selector",
+                label_visibility="collapsed"
+            )
+            st.session_state['active_tab'] = selected_tab
             
-            # タブが変更された場合、セッション状態を更新
-            # 注意: Streamlitでは直接タブのインデックスを取得できないため、
-            # 各タブ内で処理を実行してもページはリロードされないようにする
-            
-            with tab1:
+            # タブのコンテンツを表示
+            if st.session_state['active_tab'] == "データ":
                 st.markdown("### データの確認と編集")
                 st.caption("データの内容を確認し、必要に応じて編集できます")
                 
@@ -1525,7 +1527,7 @@ def main():
                     st.success("✅ データをリセットしました")
                     st.rerun()
             
-            with tab2:
+            elif st.session_state['active_tab'] == "分析":
                 # 列のタイプを識別
                 preprocessor.identify_columns(st.session_state['current_df'], categorical_threshold=categorical_threshold)
                 
@@ -1859,7 +1861,7 @@ def main():
                         })
                         st.dataframe(value_counts_df, use_container_width=True)
             
-            with tab3:
+            elif st.session_state['active_tab'] == "前処理":
                 st.markdown("### 前処理の実行")
                 st.caption("サイドバーで設定した前処理を実行します")
                 
@@ -2390,7 +2392,7 @@ def main():
                                 st.error(f"❌ エラーが発生しました: {str(e)}")
                                 st.exception(e)
             
-            with tab4:
+            elif st.session_state['active_tab'] == "高度な機能":
                 st.subheader("高度な分析")
                 
                 analysis_tabs = st.tabs([
@@ -3253,7 +3255,7 @@ def main():
                                 if dim_reduction_method in ['umap', 'tsne']:
                                     st.info("💡 注意: UMAP/t-SNEを使用する場合は `pip install umap-learn` が必要です。")
             
-            with tab5:
+            elif st.session_state['active_tab'] == "履歴":
                 st.subheader("処理履歴（詳細）")
                 st.info("実行されたすべての処理の詳細な履歴を表示します。")
                 
