@@ -2177,6 +2177,11 @@ def main():
                                             
                                             if corr_key in st.session_state:
                                                 st.image(st.session_state[corr_key], caption="相関行列", use_container_width=True)
+                                                # グラフを非表示にするボタン
+                                                if st.button("相関行列を非表示", key="hide_corr_matrix"):
+                                                    st.session_state['generate_corr_matrix'] = False
+                                                    if corr_key in st.session_state:
+                                                        del st.session_state[corr_key]
                                                 
                                                 # 相関係数の高いペアを表示（オプション）
                                                 if st.checkbox("相関係数の高い変数ペアを表示", value=False, key="show_high_corr"):
