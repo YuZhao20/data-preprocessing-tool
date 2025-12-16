@@ -3490,7 +3490,7 @@ def main():
                                 }
                                 st.session_state['processing_history'].append(history_entry)
                                 
-                                st.success(f"✅ 外れ値検出完了: {df_before}行 → {df_after}行")
+                                    st.success(f"✅ 外れ値検出完了: {df_before}行 → {df_after}行")
                                 
                                 # 詳細結果を表示
                                 with st.expander("処理結果の詳細", expanded=True):
@@ -3503,6 +3503,27 @@ def main():
                                         st.metric("削除された行数", df_before - df_after)
                                     
                                     st.info(f"**検出方法**: {advanced_outlier_method} | **処理方法**: {action} | **外れ値割合**: {contamination}")
+                                
+                                # 処理済みデータのダウンロード
+                                st.markdown("---")
+                                st.markdown("#### 処理済みデータのダウンロード")
+                                csv = st.session_state['current_df'].to_csv(index=False, encoding='utf-8-sig')
+                                b64 = base64.b64encode(csv.encode('utf-8-sig')).decode()
+                                href = f'<a href="data:file/csv;base64,{b64}" download="advanced_outlier_removed_data.csv">📥 CSV形式でダウンロード</a>'
+                                st.markdown(href, unsafe_allow_html=True)
+                                
+                                with tempfile.NamedTemporaryFile(delete=False, suffix='.xlsx') as tmp_excel:
+                                    excel_path = tmp_excel.name
+                                    st.session_state['current_df'].to_excel(excel_path, index=False)
+                                    with open(excel_path, 'rb') as f:
+                                        excel_data = f.read()
+                                        b64_excel = base64.b64encode(excel_data).decode()
+                                    href_excel = f'<a href="data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,{b64_excel}" download="advanced_outlier_removed_data.xlsx">📥 Excel形式でダウンロード</a>'
+                                    st.markdown(href_excel, unsafe_allow_html=True)
+                                    try:
+                                        os.remove(excel_path)
+                                    except:
+                                        pass
                                 # st.rerun()を削除（ページがリロードされないように）
                             except Exception as e:
                                 st.error(f"エラー: {e}")
@@ -3612,6 +3633,27 @@ def main():
                                                 if len(processed_df.columns) > 20:
                                                     st.write(f"... 他{len(processed_df.columns) - 20}個")
                                         
+                                        # 処理済みデータのダウンロード
+                                        st.markdown("---")
+                                        st.markdown("#### 処理済みデータのダウンロード")
+                                        csv = processed_df.to_csv(index=False, encoding='utf-8-sig')
+                                        b64 = base64.b64encode(csv.encode('utf-8-sig')).decode()
+                                        href = f'<a href="data:file/csv;base64,{b64}" download="feature_selected_data.csv">📥 CSV形式でダウンロード</a>'
+                                        st.markdown(href, unsafe_allow_html=True)
+                                        
+                                        with tempfile.NamedTemporaryFile(delete=False, suffix='.xlsx') as tmp_excel:
+                                            excel_path = tmp_excel.name
+                                            processed_df.to_excel(excel_path, index=False)
+                                            with open(excel_path, 'rb') as f:
+                                                excel_data = f.read()
+                                                b64_excel = base64.b64encode(excel_data).decode()
+                                            href_excel = f'<a href="data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,{b64_excel}" download="feature_selected_data.xlsx">📥 Excel形式でダウンロード</a>'
+                                            st.markdown(href_excel, unsafe_allow_html=True)
+                                            try:
+                                                os.remove(excel_path)
+                                            except:
+                                                pass
+                                        
                                         # st.rerun()を削除（ページがリロードされないように）
                                 except Exception as e:
                                     st.error(f"❌ エラー: {e}")
@@ -3715,7 +3757,28 @@ def main():
                                         if st.checkbox("処理後のデータをプレビュー", value=False, key="preview_dim_reduced"):
                                             st.dataframe(processed_df.head(10), use_container_width=True)
                                     
-                                    st.rerun()
+                                    # 処理済みデータのダウンロード
+                                    st.markdown("---")
+                                    st.markdown("#### 処理済みデータのダウンロード")
+                                    csv = processed_df.to_csv(index=False, encoding='utf-8-sig')
+                                    b64 = base64.b64encode(csv.encode('utf-8-sig')).decode()
+                                    href = f'<a href="data:file/csv;base64,{b64}" download="dimension_reduced_data.csv">📥 CSV形式でダウンロード</a>'
+                                    st.markdown(href, unsafe_allow_html=True)
+                                    
+                                    with tempfile.NamedTemporaryFile(delete=False, suffix='.xlsx') as tmp_excel:
+                                        excel_path = tmp_excel.name
+                                        processed_df.to_excel(excel_path, index=False)
+                                        with open(excel_path, 'rb') as f:
+                                            excel_data = f.read()
+                                            b64_excel = base64.b64encode(excel_data).decode()
+                                        href_excel = f'<a href="data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,{b64_excel}" download="dimension_reduced_data.xlsx">📥 Excel形式でダウンロード</a>'
+                                        st.markdown(href_excel, unsafe_allow_html=True)
+                                        try:
+                                            os.remove(excel_path)
+                                        except:
+                                            pass
+                                    
+                                    # st.rerun()を削除（ページがリロードされないように）
                             except Exception as e:
                                 st.error(f"❌ エラー: {e}")
                                 import traceback
