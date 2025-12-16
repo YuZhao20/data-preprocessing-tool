@@ -756,7 +756,7 @@ def main():
                 st.session_state['active_tab'] = "データ"
             
             # タブ選択UI
-            tab_options = ["データ", "分析", "前処理", "可視化", "高度な機能", "履歴"]
+            tab_options = ["データ", "分析", "前処理", "可視化", "統計検定", "高度な機能", "履歴"]
             # 現在のタブのインデックスを取得
             current_index = tab_options.index(st.session_state['active_tab']) if st.session_state['active_tab'] in tab_options else 0
             
@@ -2636,6 +2636,133 @@ def main():
                                 st.warning("⚠️ 異なる変数を選択してください。")
                         else:
                             st.info("ℹ️ 散布図を作成するには、少なくとも2つの数値変数が必要です。")
+            
+            elif st.session_state['active_tab'] == "統計検定":
+                st.markdown("### 統計検定")
+                st.caption("データの分布や関係性に関する統計検定を実行できます")
+                
+                if 'current_df' not in st.session_state or st.session_state['current_df'] is None:
+                    st.warning("⚠️ データが読み込まれていません。先にデータファイルをアップロードしてください。")
+                else:
+                    # 列の識別
+                    preprocessor.identify_columns(st.session_state['current_df'], categorical_threshold=categorical_threshold)
+                    num_numeric_cols = [col for col in preprocessor.numerical_columns if col in st.session_state['current_df'].columns]
+                    num_categorical_cols = [col for col in preprocessor.categorical_columns if col in st.session_state['current_df'].columns]
+                    
+                    if len(num_numeric_cols) == 0:
+                        st.info("ℹ️ 統計検定を実行するには、数値変数が必要です。")
+                    else:
+                        # 変数が多い場合の警告
+                        if len(num_numeric_cols) > 15:
+                            st.warning(f"⚠️ 変数が{len(num_numeric_cols)}個あります。統計検定の実行には時間がかかる場合があります。")
+                        
+                        if st.checkbox("統計検定を実行", value=(len(num_numeric_cols) <= 15), key="execute_statistical_tests"):
+                            with st.spinner("統計検定を実行中..."):
+                                try:
+                                    # 統計検定を実行
+                                    test_results = preprocessor.run_statistical_tests(
+                                        st.session_state['current_df'],
+                                        numerical_columns=num_numeric_cols,
+                                        categorical_columns=num_categorical_cols
+                                    )
+                                    
+                                    if test_results:
+                                        st.success("✅ 統計検定が完了しました")
+                                        
+                                        # 正規性検定
+                                        if 'normality' in test_results:
+                                            st.markdown("#### 正規性検定")
+                                            normality_df = pd.DataFrame(test_results['normality'])
+                                            st.dataframe(normality_df, use_container_width=True)
+                                        
+                                        # 等分散性検定
+                                        if 'homoscedasticity' in test_results:
+                                            st.markdown("#### 等分散性検定")
+                                            homoscedasticity_df = pd.DataFrame(test_results['homoscedasticity'])
+                                            st.dataframe(homoscedasticity_df, use_container_width=True)
+                                        
+                                        # 独立性検定
+                                        if 'independence' in test_results:
+                                            st.markdown("#### 独立性検定（カイ二乗検定）")
+                                            independence_df = pd.DataFrame(test_results['independence'])
+                                            st.dataframe(independence_df, use_container_width=True)
+                                        
+                                        # その他の統計量
+                                        if 'descriptive' in test_results:
+                                            st.markdown("#### 記述統計量（歪度・尖度）")
+                                            descriptive_df = pd.DataFrame(test_results['descriptive'])
+                                            st.dataframe(descriptive_df, use_container_width=True)
+                                        
+                                        # VIF分析
+                                        if len(num_numeric_cols) >= 2:
+                                            st.markdown("#### VIF分析（多重共線性の検出）")
+                                            try:
+                                                vif_results = preprocessor.calculate_vif(st.session_state['current_df'], threshold=10.0)
+                                                if len(vif_results) > 0:
+                                                    st.dataframe(vif_results, use_container_width=True)
+                                                    
+                                                    high_vif = vif_results[vif_results["共線性あり"]]
+                                                    if len(high_vif) > 0:
+                                                        st.warning(f"⚠️ {len(high_vif)}個の変数で共線性が検出されました: {', '.join(high_vif['変数'].tolist())}")
+                                                    else:
+                                                        st.success("✅ 共線性の問題は検出されませんでした")
+                                                else:
+                                                    st.info("VIF計算に必要な数値変数が不足しています")
+                                            except Exception as e:
+                                                st.warning(f"VIF計算中にエラーが発生しました: {str(e)}")
+                                        
+                                        # 条件数
+                                        if len(num_numeric_cols) >= 2:
+                                            st.markdown("#### 条件数（数値安定性の指標）")
+                                            try:
+                                                condition_number = preprocessor.calculate_condition_number(st.session_state['current_df'][num_numeric_cols])
+                                                st.metric("条件数", f"{condition_number:.2f}")
+                                                if condition_number > 1e12:
+                                                    st.error("⚠️ 条件数が非常に大きいです。多重共線性の問題が疑われます。")
+                                                elif condition_number > 1e6:
+                                                    st.warning("⚠️ 条件数が大きいです。多重共線性に注意してください。")
+                                                else:
+                                                    st.success("✅ 条件数は正常範囲内です")
+                                            except Exception as e:
+                                                st.warning(f"条件数の計算中にエラーが発生しました: {str(e)}")
+                                    else:
+                                        st.info("統計検定の結果がありません")
+                                except Exception as e:
+                                    st.error(f"統計検定の実行中にエラーが発生しました: {e}")
+                                    import traceback
+                                    with st.expander("詳細なエラー情報", expanded=False):
+                                        st.code(traceback.format_exc())
+                        else:
+                            st.info("💡 統計検定を実行するには、上記のチェックボックスにチェックを入れてください。")
+                        
+                        # 統計検定の説明
+                        with st.expander("統計検定について", expanded=False):
+                            st.markdown("""
+                            ### 実装されている統計検定
+                            
+                            #### 正規性検定
+                            1. **Shapiro-Wilk検定**: 小標本（n < 50）に適した正規性検定
+                            2. **D'Agostino-Pearson検定**: 歪度と尖度に基づく正規性検定
+                            3. **Anderson-Darling検定**: より強力な正規性検定
+                            
+                            #### 等分散性検定
+                            1. **Levene検定**: 正規分布でない場合でも使用可能
+                            2. **Bartlett検定**: 正規分布を仮定した等分散性検定
+                            
+                            #### 独立性検定
+                            1. **カイ二乗検定**: カテゴリ変数間の独立性を検定
+                            
+                            #### その他の統計量
+                            1. **歪度（Skewness）**: 分布の非対称性
+                            2. **尖度（Kurtosis）**: 分布の尖り具合
+                            3. **VIF（Variance Inflation Factor）**: 多重共線性の検出
+                            4. **条件数（Condition Number）**: 数値安定性の指標
+                            
+                            ### 使い方
+                            1. 上記のチェックボックスにチェックを入れる
+                            2. 統計検定の結果が表示されます
+                            3. 変数が多い場合は、実行に時間がかかる場合があります
+                            """)
             
             elif st.session_state['active_tab'] == "高度な機能":
                 st.subheader("高度な分析")
