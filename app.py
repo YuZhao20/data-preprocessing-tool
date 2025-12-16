@@ -190,13 +190,7 @@ def main():
     if 'show_help' in st.session_state:
         st.markdown("---")
         with st.container():
-            col_help_header1, col_help_header2 = st.columns([3, 1])
-            with col_help_header1:
-                st.markdown("### ヘルプとガイド")
-            with col_help_header2:
-                if st.button("戻る", use_container_width=True, key="help_back"):
-                    del st.session_state['show_help']
-                    st.rerun()
+            st.markdown("### ヘルプとガイド")
             
             help_tabs = st.tabs(["使い方ガイド", "前処理のフロー", "よくある質問", "機能一覧"])
             
@@ -3708,41 +3702,8 @@ def main():
                 os.unlink(tmp_path)
     
     else:
-        st.info("👈 左側のサイドバーからデータファイルをアップロードしてください")
-        
-        # 使用例を表示
-        with st.expander("使用例とサンプルデータ"):
-            st.markdown("""
-            ### サンプルデータの作成方法
-            
-            以下のような形式のCSVファイルを準備してください：
-            
-            ```csv
-            年齢,収入,都市,教育,性別,経験年数,ターゲット
-            25,50000,東京,学士,1,3,1
-            30,60000,大阪,修士,0,5,0
-            ...
-            ```
-            
-            ### 推奨される前処理の流れ
-            
-            1. **欠損値処理**: まずは "auto" を試してみてください
-            2. **外れ値除去**: データに外れ値が多そうな場合は有効化
-            3. **カテゴリ変数エンコーディング**: "auto" で自動選択
-            4. **特徴量スケーリング**: 機械学習を使用する場合は "standard" を推奨
-            5. **特徴量選択**: 変数が多い場合に有効化
-            
-            ### よくある質問
-            
-            **Q: どの前処理を選べばいいですか？**  
-            A: まずはデフォルト設定（auto）で試してみてください。結果を見ながら調整します。
-            
-            **Q: エラーが発生しました**  
-            A: ファイル形式が正しいか確認してください。CSVファイルはカンマ区切りである必要があります。
-            
-            **Q: 処理に時間がかかります**  
-            A: データサイズが大きい場合、処理に時間がかかることがあります。しばらくお待ちください。
-            """)
+        # データ未アップロード時は何も表示しない（シンプルに）
+        pass
 
 
 if __name__ == "__main__":
