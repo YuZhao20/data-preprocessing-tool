@@ -105,16 +105,24 @@ def main():
     uploaded_file = None
     
     # ヘッダー
-    col_header1, col_header2, col_header3 = st.columns([2, 1, 1])
+    col_header1, col_header2, col_header3, col_header4 = st.columns([2, 1, 1, 1])
     with col_header1:
         st.title("データ前処理ツール")
     with col_header2:
+        st.markdown("<br>", unsafe_allow_html=True)
+        if st.button("ホーム", use_container_width=True, help="メインページに戻る"):
+            if 'show_help' in st.session_state:
+                del st.session_state['show_help']
+            if 'show_full_history' in st.session_state:
+                del st.session_state['show_full_history']
+            st.rerun()
+    with col_header3:
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("リセット", use_container_width=True, help="すべての設定とデータをリセット"):
             for key in list(st.session_state.keys()):
                 del st.session_state[key]
             st.rerun()
-    with col_header3:
+    with col_header4:
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("ヘルプ", use_container_width=True, help="使い方ガイドを表示"):
             st.session_state['show_help'] = True
@@ -182,23 +190,25 @@ def main():
     if 'show_help' in st.session_state:
         st.markdown("---")
         with st.container():
-            st.markdown("### ヘルプとガイド")
+            col_help_header1, col_help_header2 = st.columns([3, 1])
+            with col_help_header1:
+                st.markdown("### ヘルプとガイド")
+            with col_help_header2:
+                if st.button("戻る", use_container_width=True, key="help_back"):
+                    del st.session_state['show_help']
+                    st.rerun()
             
             help_tabs = st.tabs(["使い方ガイド", "前処理のフロー", "よくある質問", "機能一覧"])
             
             with help_tabs[0]:
                 st.markdown("""
-                ### 基本的な使い方（シンプル版）
+                ### 基本的な使い方
                 
                 1. **ファイルをアップロード**（サイドバー）
                 2. **「データ」タブ**で中身を確認・必要なら編集
                 3. **「前処理」タブ**で設定を確認し、「前処理を実行」をクリック
                 4. 必要に応じて **「可視化」・「統計検定」・「高度な機能」** タブを利用
                 5. 「データ」タブや各機能内のダウンロードボタンから処理済みデータを保存
-                
-                #### 使用例・サンプルデータの使い方
-                - 授業や資料で配布されたサンプルデータをアップロードして、上記の流れをそのまま試してください。
-                - 自分のデータでも同じ手順で使えます（数値・カテゴリ・欠損が含まれていても問題ありません）。
                 """)
             
             with help_tabs[1]:
