@@ -659,12 +659,8 @@ def main():
                 help="ユニーク値がこの数以下の整数列をカテゴリ変数として扱う"
             )
         
-        st.markdown("---")
-        st.markdown("## 分析オプション")
-        
-        show_statistics = st.checkbox("記述統計量を表示", value=True)
-        
         # 可視化と統計検定は独立したタブに移動しました
+        st.markdown("---")
         st.info("💡 可視化は「可視化」タブ、統計検定は「統計検定」タブで利用できます。")
         
         alpha_level = 0.05  # デフォルト値
@@ -1991,7 +1987,8 @@ def main():
                                     st.dataframe(processed_df.head(10), use_container_width=True)
                                 
                                 # 記述統計量（コンパクトに表示）
-                                if show_statistics:
+                                # 統計量を表示（常に表示）
+                                if True:
                                     st.markdown("---")
                                     st.subheader("記述統計量")
                                     
@@ -2464,38 +2461,109 @@ def main():
                             with st.spinner("統計検定を実行中..."):
                                 try:
                                     # 統計検定を実行
-                                    test_results = preprocessor.run_statistical_tests(
+                                    test_results = preprocessor.statistical_tests(
                                         st.session_state['current_df'],
-                                        numerical_columns=num_numeric_cols,
-                                        categorical_columns=num_categorical_cols
+                                        columns=num_numeric_cols,
+                                        alpha=0.05
                                     )
                                     
                                     if test_results:
                                         st.success("✅ 統計検定が完了しました")
                                         
-                                        # 正規性検定
-                                        if 'normality' in test_results:
-                                            st.markdown("#### 正規性検定")
-                                            normality_df = pd.DataFrame(test_results['normality'])
-                                            st.dataframe(normality_df, use_container_width=True)
+                                        # 各変数の検定結果を表示
+                                        for col, col_results in test_results.items():
+                                            if col in ['levene_test', 'bartlett_test', 'chi_square_test']:
+                                                continue  # これらは後で表示
+                                            
+                                            with st.expander(f"{col} の検定結果", expanded=False):
+                                                # 正規性検定
+                                                if 'shapiro_wilk' in col_results:
+                                                    sw = col_results['shapiro_wilk']
+                                                    st.markdown("**1. Shapiro-Wilk検定（正規性検定）**")
+                                                    col1, col2, col3 = st.columns(3)
+                                                    with col1:
+                                                        st.metric("統計量", f"{sw['statistic']:.4f}")
+                                                    with col2:
+                                                        st.metric("p値", f"{sw['p_value']:.4f}")
+                                                    with col3:
+                                                        result_text = "✅ 正規分布" if sw['is_normal'] else "❌ 非正規分布"
+                                                        st.metric("結果", result_text)
+                                                
+                                                if 'dagostino_pearson' in col_results:
+                                                    dp = col_results['dagostino_pearson']
+                                                    st.markdown("**2. D'Agostino-Pearson検定（正規性検定）**")
+                                                    col1, col2, col3 = st.columns(3)
+                                                    with col1:
+                                                        st.metric("統計量", f"{dp['statistic']:.4f}")
+                                                    with col2:
+                                                        st.metric("p値", f"{dp['p_value']:.4f}")
+                                                    with col3:
+                                                        result_text = "✅ 正規分布" if dp['is_normal'] else "❌ 非正規分布"
+                                                        st.metric("結果", result_text)
+                                                
+                                                if 'anderson_darling' in col_results:
+                                                    ad = col_results['anderson_darling']
+                                                    st.markdown("**3. Anderson-Darling検定（正規性検定）**")
+                                                    st.metric("統計量", f"{ad['statistic']:.4f}")
+                                                    st.info("臨界値と比較して判断してください")
+                                                
+                                                # 分布の形状
+                                                if 'skewness' in col_results and 'kurtosis' in col_results:
+                                                    st.markdown("**4. 分布の形状**")
+                                                    skew = col_results['skewness']
+                                                    kurt = col_results['kurtosis']
+                                                    
+                                                    col1, col2 = st.columns(2)
+                                                    with col1:
+                                                        skew_desc = "右に歪む" if skew > 0 else "左に歪む" if skew < 0 else "対称"
+                                                        st.metric("歪度", f"{skew:.4f}", help=f"{skew_desc}")
+                                                    with col2:
+                                                        kurt_desc = "尖っている" if kurt > 0 else "平ら" if kurt < 0 else "正規分布に近い"
+                                                        st.metric("尖度", f"{kurt:.4f}", help=f"{kurt_desc}")
                                         
                                         # 等分散性検定
-                                        if 'homoscedasticity' in test_results:
-                                            st.markdown("#### 等分散性検定")
-                                            homoscedasticity_df = pd.DataFrame(test_results['homoscedasticity'])
-                                            st.dataframe(homoscedasticity_df, use_container_width=True)
+                                        if 'levene_test' in test_results:
+                                            st.markdown("---")
+                                            st.subheader("等分散性検定")
+                                            levene = test_results['levene_test']
+                                            col1, col2, col3 = st.columns(3)
+                                            with col1:
+                                                st.metric("統計量", f"{levene['statistic']:.4f}")
+                                            with col2:
+                                                st.metric("p値", f"{levene['p_value']:.4f}")
+                                            with col3:
+                                                result_text = "✅ 等分散" if levene['equal_variance'] else "❌ 不等分散"
+                                                st.metric("結果", result_text)
+                                            st.info("**Levene検定**: 正規分布でなくても使用可能な等分散性検定")
+                                        
+                                        if 'bartlett_test' in test_results:
+                                            bartlett = test_results['bartlett_test']
+                                            col1, col2, col3 = st.columns(3)
+                                            with col1:
+                                                st.metric("統計量", f"{bartlett['statistic']:.4f}")
+                                            with col2:
+                                                st.metric("p値", f"{bartlett['p_value']:.4f}")
+                                            with col3:
+                                                result_text = "✅ 等分散" if bartlett['equal_variance'] else "❌ 不等分散"
+                                                st.metric("結果", result_text)
+                                            st.info("**Bartlett検定**: 正規分布を仮定した等分散性検定")
                                         
                                         # 独立性検定
-                                        if 'independence' in test_results:
-                                            st.markdown("#### 独立性検定（カイ二乗検定）")
-                                            independence_df = pd.DataFrame(test_results['independence'])
-                                            st.dataframe(independence_df, use_container_width=True)
-                                        
-                                        # その他の統計量
-                                        if 'descriptive' in test_results:
-                                            st.markdown("#### 記述統計量（歪度・尖度）")
-                                            descriptive_df = pd.DataFrame(test_results['descriptive'])
-                                            st.dataframe(descriptive_df, use_container_width=True)
+                                        if 'chi_square_test' in test_results:
+                                            st.markdown("---")
+                                            st.subheader("独立性検定（カテゴリ変数）")
+                                            chi2 = test_results['chi_square_test']
+                                            col1, col2, col3, col4 = st.columns(4)
+                                            with col1:
+                                                st.metric("統計量（χ²）", f"{chi2['statistic']:.4f}")
+                                            with col2:
+                                                st.metric("p値", f"{chi2['p_value']:.4f}")
+                                            with col3:
+                                                st.metric("自由度", chi2['degrees_of_freedom'])
+                                            with col4:
+                                                result_text = "✅ 独立" if chi2['independent'] else "❌ 従属"
+                                                st.metric("結果", result_text)
+                                            st.info("**カイ二乗検定**: 2つのカテゴリ変数が独立かどうかを検定")
                                         
                                         # VIF分析
                                         if len(num_numeric_cols) >= 2:
