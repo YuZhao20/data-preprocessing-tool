@@ -3465,7 +3465,7 @@ def main():
                                 }
                                 st.session_state['processing_history'].append(history_entry)
                                 
-                                    st.success(f"✅ 外れ値検出完了: {df_before}行 → {df_after}行")
+                                st.success(f"✅ 外れ値検出完了: {df_before}行 → {df_after}行")
                                 
                                 # 詳細結果を表示
                                 with st.expander("処理結果の詳細", expanded=True):
