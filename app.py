@@ -2255,44 +2255,73 @@ def main():
                                         
                                         value_counts = st.session_state['current_df'][selected_cat_col].value_counts()
                                         
+                                        # 一時ファイルに保存
+                                        tmp_cat_plot = tempfile.NamedTemporaryFile(delete=False, suffix='.png')
+                                        cat_plot_path = tmp_cat_plot.name
+                                        tmp_cat_plot.close()
+                                        
                                         if cat_plot_type == "両方":
-                                            fig, axes = plt.subplots(1, 2, figsize=(16, 6))
+                                            fig, axes = plt.subplots(1, 2, figsize=(cat_fig_width*2, cat_fig_height))
                                             
                                             # 棒グラフ
-                                            value_counts.plot(kind='bar', ax=axes[0], color='steelblue', edgecolor='black')
-                                            axes[0].set_title(f'{selected_cat_col}の棒グラフ', fontsize=12)
-                                            axes[0].set_xlabel(selected_cat_col, fontsize=10)
-                                            axes[0].set_ylabel('頻度', fontsize=10)
+                                            value_counts.plot(kind='bar', ax=axes[0], color=cat_color, edgecolor=cat_edge_color)
+                                            axes[0].set_title(f'{selected_cat_col}の棒グラフ', fontsize=cat_font_size)
+                                            axes[0].set_xlabel(selected_cat_col, fontsize=cat_font_size-2)
+                                            axes[0].set_ylabel('頻度', fontsize=cat_font_size-2)
                                             axes[0].tick_params(axis='x', rotation=45)
-                                            axes[0].grid(True, alpha=0.3, axis='y')
+                                            axes[0].grid(True, alpha=cat_grid_alpha, axis='y')
                                             
                                             # 円グラフ
                                             value_counts.plot(kind='pie', ax=axes[1], autopct='%1.1f%%', startangle=90)
-                                            axes[1].set_title(f'{selected_cat_col}の円グラフ', fontsize=12)
+                                            axes[1].set_title(f'{selected_cat_col}の円グラフ', fontsize=cat_font_size)
                                             axes[1].set_ylabel('')
                                             
                                             plt.tight_layout()
+                                            fig.savefig(cat_plot_path, dpi=300, bbox_inches='tight')
                                             st.pyplot(fig, clear_figure=True)
                                             plt.close(fig)
                                         elif cat_plot_type == "棒グラフ":
-                                            fig, ax = plt.subplots(figsize=(10, 6))
-                                            value_counts.plot(kind='bar', ax=ax, color='steelblue', edgecolor='black')
-                                            ax.set_title(f'{selected_cat_col}の棒グラフ', fontsize=14)
-                                            ax.set_xlabel(selected_cat_col, fontsize=12)
-                                            ax.set_ylabel('頻度', fontsize=12)
+                                            fig, ax = plt.subplots(figsize=(cat_fig_width, cat_fig_height))
+                                            value_counts.plot(kind='bar', ax=ax, color=cat_color, edgecolor=cat_edge_color)
+                                            ax.set_title(f'{selected_cat_col}の棒グラフ', fontsize=cat_font_size)
+                                            ax.set_xlabel(selected_cat_col, fontsize=cat_font_size-2)
+                                            ax.set_ylabel('頻度', fontsize=cat_font_size-2)
                                             ax.tick_params(axis='x', rotation=45)
-                                            ax.grid(True, alpha=0.3, axis='y')
+                                            ax.grid(True, alpha=cat_grid_alpha, axis='y')
                                             plt.tight_layout()
+                                            fig.savefig(cat_plot_path, dpi=300, bbox_inches='tight')
                                             st.pyplot(fig, clear_figure=True)
                                             plt.close(fig)
                                         elif cat_plot_type == "円グラフ":
-                                            fig, ax = plt.subplots(figsize=(8, 8))
+                                            fig, ax = plt.subplots(figsize=(cat_fig_width, cat_fig_width))
                                             value_counts.plot(kind='pie', ax=ax, autopct='%1.1f%%', startangle=90)
-                                            ax.set_title(f'{selected_cat_col}の円グラフ', fontsize=14)
+                                            ax.set_title(f'{selected_cat_col}の円グラフ', fontsize=cat_font_size)
                                             ax.set_ylabel('')
                                             plt.tight_layout()
+                                            fig.savefig(cat_plot_path, dpi=300, bbox_inches='tight')
                                             st.pyplot(fig, clear_figure=True)
                                             plt.close(fig)
+                                        
+                                        # 図をセッション状態に保存
+                                        if os.path.exists(cat_plot_path) and os.path.getsize(cat_plot_path) > 0:
+                                            with open(cat_plot_path, 'rb') as f:
+                                                cat_plot_image = f.read()
+                                            st.session_state['last_plot_image'] = cat_plot_image
+                                            st.session_state['last_plot_filename'] = f"{selected_cat_col}_{cat_plot_type}.png"
+                                            
+                                            # ダウンロードボタン
+                                            st.download_button(
+                                                label="📥 図をダウンロード",
+                                                data=cat_plot_image,
+                                                file_name=st.session_state['last_plot_filename'],
+                                                mime="image/png",
+                                                key="download_cat_plot"
+                                            )
+                                            
+                                            try:
+                                                os.remove(cat_plot_path)
+                                            except:
+                                                pass
                                     except Exception as e:
                                         st.error(f"❌ グラフの生成中にエラーが発生しました: {str(e)}")
                                         import traceback
@@ -2308,6 +2337,17 @@ def main():
                             if len(num_numeric_cols) > 20:
                                 st.warning(f"⚠️ 変数が{len(num_numeric_cols)}個あります。相関行列の表示には時間がかかる場合があります。")
                             
+                            # カスタマイズオプション
+                            with st.expander("グラフのカスタマイズ", expanded=False):
+                                col_corr1, col_corr2 = st.columns(2)
+                                with col_corr1:
+                                    corr_fig_size = st.slider("図のサイズ", min_value=8, max_value=20, value=max(12, len(num_numeric_cols) * 0.8), key="corr_fig_size")
+                                    corr_font_size = st.slider("フォントサイズ", min_value=8, max_value=20, value=12, key="corr_font_size")
+                                    corr_cmap = st.selectbox("カラーマップ", ["coolwarm", "viridis", "plasma", "RdYlBu", "seismic"], key="corr_cmap")
+                                with col_corr2:
+                                    show_annot = st.checkbox("数値を表示", value=True, key="corr_annot")
+                                    corr_linewidth = st.slider("線の太さ", min_value=0, max_value=3, value=1, key="corr_linewidth")
+                            
                             if st.button("相関行列を表示", key="btn_show_corr", type="primary"):
                                 try:
                                     with st.spinner("相関行列を計算中..."):
@@ -2321,13 +2361,41 @@ def main():
                                             from data_preprocessor import setup_japanese_font
                                             setup_japanese_font()
                                         
-                                        fig, ax = plt.subplots(figsize=(max(12, len(num_numeric_cols) * 0.8), max(10, len(num_numeric_cols) * 0.8)))
-                                        sns.heatmap(corr_matrix, annot=True, fmt='.2f', cmap='coolwarm', 
-                                                   center=0, square=True, linewidths=1, cbar_kws={"shrink": 0.8}, ax=ax)
-                                        ax.set_title('変数間の相関行列', fontsize=14, pad=20)
+                                        # 一時ファイルに保存
+                                        tmp_corr = tempfile.NamedTemporaryFile(delete=False, suffix='.png')
+                                        corr_path = tmp_corr.name
+                                        tmp_corr.close()
+                                        
+                                        fig, ax = plt.subplots(figsize=(corr_fig_size, corr_fig_size))
+                                        sns.heatmap(corr_matrix, annot=show_annot, fmt='.2f', cmap=corr_cmap, 
+                                                   center=0, square=True, linewidths=corr_linewidth, 
+                                                   cbar_kws={"shrink": 0.8}, ax=ax)
+                                        ax.set_title('変数間の相関行列', fontsize=corr_font_size, pad=20)
                                         plt.tight_layout()
+                                        fig.savefig(corr_path, dpi=300, bbox_inches='tight')
                                         st.pyplot(fig, clear_figure=True)
                                         plt.close(fig)
+                                        
+                                        # 図をセッション状態に保存
+                                        if os.path.exists(corr_path) and os.path.getsize(corr_path) > 0:
+                                            with open(corr_path, 'rb') as f:
+                                                corr_image = f.read()
+                                            st.session_state['last_plot_image'] = corr_image
+                                            st.session_state['last_plot_filename'] = "correlation_matrix.png"
+                                            
+                                            # ダウンロードボタン
+                                            st.download_button(
+                                                label="📥 相関行列をダウンロード",
+                                                data=corr_image,
+                                                file_name="correlation_matrix.png",
+                                                mime="image/png",
+                                                key="download_corr_plot"
+                                            )
+                                            
+                                            try:
+                                                os.remove(corr_path)
+                                            except:
+                                                pass
                                         
                                         # 相関係数の高いペアを表示
                                         st.markdown("#### 相関係数の高い変数ペア")
