@@ -2410,6 +2410,376 @@ def main():
                                 st.error(f"❌ エラーが発生しました: {str(e)}")
                                 st.exception(e)
             
+            elif st.session_state['active_tab'] == "可視化":
+                st.markdown("### データの可視化")
+                st.caption("データの分布や関係性を視覚的に確認できます")
+                
+                if 'current_df' not in st.session_state or st.session_state['current_df'] is None:
+                    st.warning("⚠️ データが読み込まれていません。先にデータファイルをアップロードしてください。")
+                else:
+                    # 列の識別
+                    preprocessor.identify_columns(st.session_state['current_df'], categorical_threshold=categorical_threshold)
+                    num_numeric_cols = [col for col in preprocessor.numerical_columns if col in st.session_state['current_df'].columns]
+                    num_categorical_cols = [col for col in preprocessor.categorical_columns if col in st.session_state['current_df'].columns]
+                    
+                    # 可視化オプション
+                    viz_tabs = st.tabs([
+                        "データ分布", "相関行列", "欠損値", "散布図", "その他"
+                    ])
+                    
+                    with viz_tabs[0]:
+                        st.subheader("データ分布の可視化")
+                        
+                        if len(num_numeric_cols) > 0 or len(num_categorical_cols) > 0:
+                            # 数値変数の分布
+                            if len(num_numeric_cols) > 0:
+                                st.markdown("#### 数値変数の分布")
+                                selected_num_col = st.selectbox(
+                                    "可視化する数値変数を選択",
+                                    num_numeric_cols,
+                                    key="viz_num_col"
+                                )
+                                
+                                plot_type = st.radio(
+                                    "プロットタイプ",
+                                    ["ヒストグラム", "箱ひげ図", "密度プロット", "すべて"],
+                                    horizontal=True,
+                                    key="viz_plot_type"
+                                )
+                                
+                                if st.button("グラフを表示", key="btn_show_dist", type="primary"):
+                                    try:
+                                        import matplotlib.pyplot as plt
+                                        try:
+                                            import japanize_matplotlib
+                                        except ImportError:
+                                            from data_preprocessor import setup_japanese_font
+                                            setup_japanese_font()
+                                        
+                                        if plot_type == "すべて":
+                                            fig, axes = plt.subplots(1, 3, figsize=(18, 5))
+                                            
+                                            # ヒストグラム
+                                            st.session_state['current_df'][selected_num_col].hist(bins=30, ax=axes[0], edgecolor='black')
+                                            axes[0].set_title(f'{selected_num_col}のヒストグラム', fontsize=12)
+                                            axes[0].set_xlabel(selected_num_col, fontsize=10)
+                                            axes[0].set_ylabel('頻度', fontsize=10)
+                                            axes[0].grid(True, alpha=0.3)
+                                            
+                                            # 箱ひげ図
+                                            st.session_state['current_df'][[selected_num_col]].boxplot(ax=axes[1])
+                                            axes[1].set_title(f'{selected_num_col}の箱ひげ図', fontsize=12)
+                                            axes[1].set_ylabel(selected_num_col, fontsize=10)
+                                            axes[1].grid(True, alpha=0.3)
+                                            
+                                            # 密度プロット
+                                            st.session_state['current_df'][selected_num_col].plot.density(ax=axes[2])
+                                            axes[2].set_title(f'{selected_num_col}の密度プロット', fontsize=12)
+                                            axes[2].set_xlabel(selected_num_col, fontsize=10)
+                                            axes[2].set_ylabel('密度', fontsize=10)
+                                            axes[2].grid(True, alpha=0.3)
+                                            
+                                            plt.tight_layout()
+                                            st.pyplot(fig, clear_figure=True)
+                                            plt.close(fig)
+                                        elif plot_type == "ヒストグラム":
+                                            fig, ax = plt.subplots(figsize=(10, 6))
+                                            st.session_state['current_df'][selected_num_col].hist(bins=30, ax=ax, edgecolor='black')
+                                            ax.set_title(f'{selected_num_col}のヒストグラム', fontsize=14)
+                                            ax.set_xlabel(selected_num_col, fontsize=12)
+                                            ax.set_ylabel('頻度', fontsize=12)
+                                            ax.grid(True, alpha=0.3)
+                                            plt.tight_layout()
+                                            st.pyplot(fig, clear_figure=True)
+                                            plt.close(fig)
+                                        elif plot_type == "箱ひげ図":
+                                            fig, ax = plt.subplots(figsize=(8, 6))
+                                            st.session_state['current_df'][[selected_num_col]].boxplot(ax=ax)
+                                            ax.set_title(f'{selected_num_col}の箱ひげ図', fontsize=14)
+                                            ax.set_ylabel(selected_num_col, fontsize=12)
+                                            ax.grid(True, alpha=0.3)
+                                            plt.tight_layout()
+                                            st.pyplot(fig, clear_figure=True)
+                                            plt.close(fig)
+                                        elif plot_type == "密度プロット":
+                                            fig, ax = plt.subplots(figsize=(10, 6))
+                                            st.session_state['current_df'][selected_num_col].plot.density(ax=ax)
+                                            ax.set_title(f'{selected_num_col}の密度プロット', fontsize=14)
+                                            ax.set_xlabel(selected_num_col, fontsize=12)
+                                            ax.set_ylabel('密度', fontsize=12)
+                                            ax.grid(True, alpha=0.3)
+                                            plt.tight_layout()
+                                            st.pyplot(fig, clear_figure=True)
+                                            plt.close(fig)
+                                    except Exception as e:
+                                        st.error(f"❌ グラフの生成中にエラーが発生しました: {str(e)}")
+                                        import traceback
+                                        with st.expander("詳細なエラー情報", expanded=False):
+                                            st.code(traceback.format_exc())
+                            
+                            # カテゴリ変数の分布
+                            if len(num_categorical_cols) > 0:
+                                st.markdown("#### カテゴリ変数の分布")
+                                selected_cat_col = st.selectbox(
+                                    "可視化するカテゴリ変数を選択",
+                                    num_categorical_cols,
+                                    key="viz_cat_col"
+                                )
+                                
+                                cat_plot_type = st.radio(
+                                    "プロットタイプ",
+                                    ["棒グラフ", "円グラフ", "両方"],
+                                    horizontal=True,
+                                    key="viz_cat_plot_type"
+                                )
+                                
+                                if st.button("グラフを表示", key="btn_show_cat_dist", type="primary"):
+                                    try:
+                                        import matplotlib.pyplot as plt
+                                        try:
+                                            import japanize_matplotlib
+                                        except ImportError:
+                                            from data_preprocessor import setup_japanese_font
+                                            setup_japanese_font()
+                                        
+                                        value_counts = st.session_state['current_df'][selected_cat_col].value_counts()
+                                        
+                                        if cat_plot_type == "両方":
+                                            fig, axes = plt.subplots(1, 2, figsize=(16, 6))
+                                            
+                                            # 棒グラフ
+                                            value_counts.plot(kind='bar', ax=axes[0], color='steelblue', edgecolor='black')
+                                            axes[0].set_title(f'{selected_cat_col}の棒グラフ', fontsize=12)
+                                            axes[0].set_xlabel(selected_cat_col, fontsize=10)
+                                            axes[0].set_ylabel('頻度', fontsize=10)
+                                            axes[0].tick_params(axis='x', rotation=45)
+                                            axes[0].grid(True, alpha=0.3, axis='y')
+                                            
+                                            # 円グラフ
+                                            value_counts.plot(kind='pie', ax=axes[1], autopct='%1.1f%%', startangle=90)
+                                            axes[1].set_title(f'{selected_cat_col}の円グラフ', fontsize=12)
+                                            axes[1].set_ylabel('')
+                                            
+                                            plt.tight_layout()
+                                            st.pyplot(fig, clear_figure=True)
+                                            plt.close(fig)
+                                        elif cat_plot_type == "棒グラフ":
+                                            fig, ax = plt.subplots(figsize=(10, 6))
+                                            value_counts.plot(kind='bar', ax=ax, color='steelblue', edgecolor='black')
+                                            ax.set_title(f'{selected_cat_col}の棒グラフ', fontsize=14)
+                                            ax.set_xlabel(selected_cat_col, fontsize=12)
+                                            ax.set_ylabel('頻度', fontsize=12)
+                                            ax.tick_params(axis='x', rotation=45)
+                                            ax.grid(True, alpha=0.3, axis='y')
+                                            plt.tight_layout()
+                                            st.pyplot(fig, clear_figure=True)
+                                            plt.close(fig)
+                                        elif cat_plot_type == "円グラフ":
+                                            fig, ax = plt.subplots(figsize=(8, 8))
+                                            value_counts.plot(kind='pie', ax=ax, autopct='%1.1f%%', startangle=90)
+                                            ax.set_title(f'{selected_cat_col}の円グラフ', fontsize=14)
+                                            ax.set_ylabel('')
+                                            plt.tight_layout()
+                                            st.pyplot(fig, clear_figure=True)
+                                            plt.close(fig)
+                                    except Exception as e:
+                                        st.error(f"❌ グラフの生成中にエラーが発生しました: {str(e)}")
+                                        import traceback
+                                        with st.expander("詳細なエラー情報", expanded=False):
+                                            st.code(traceback.format_exc())
+                        else:
+                            st.info("ℹ️ 可視化する数値変数またはカテゴリ変数が見つかりませんでした。")
+                    
+                    with viz_tabs[1]:
+                        st.subheader("相関行列の可視化")
+                        
+                        if len(num_numeric_cols) >= 2:
+                            if len(num_numeric_cols) > 20:
+                                st.warning(f"⚠️ 変数が{len(num_numeric_cols)}個あります。相関行列の表示には時間がかかる場合があります。")
+                            
+                            if st.button("相関行列を表示", key="btn_show_corr", type="primary"):
+                                try:
+                                    with st.spinner("相関行列を計算中..."):
+                                        corr_matrix = st.session_state['current_df'][num_numeric_cols].corr()
+                                        
+                                        import matplotlib.pyplot as plt
+                                        import seaborn as sns
+                                        try:
+                                            import japanize_matplotlib
+                                        except ImportError:
+                                            from data_preprocessor import setup_japanese_font
+                                            setup_japanese_font()
+                                        
+                                        fig, ax = plt.subplots(figsize=(max(12, len(num_numeric_cols) * 0.8), max(10, len(num_numeric_cols) * 0.8)))
+                                        sns.heatmap(corr_matrix, annot=True, fmt='.2f', cmap='coolwarm', 
+                                                   center=0, square=True, linewidths=1, cbar_kws={"shrink": 0.8}, ax=ax)
+                                        ax.set_title('変数間の相関行列', fontsize=14, pad=20)
+                                        plt.tight_layout()
+                                        st.pyplot(fig, clear_figure=True)
+                                        plt.close(fig)
+                                        
+                                        # 相関係数の高いペアを表示
+                                        st.markdown("#### 相関係数の高い変数ペア")
+                                        corr_pairs = []
+                                        for i in range(len(corr_matrix.columns)):
+                                            for j in range(i+1, len(corr_matrix.columns)):
+                                                corr_val = corr_matrix.iloc[i, j]
+                                                if not np.isnan(corr_val):
+                                                    corr_pairs.append({
+                                                        '変数1': corr_matrix.columns[i],
+                                                        '変数2': corr_matrix.columns[j],
+                                                        '相関係数': corr_val
+                                                    })
+                                        
+                                        if corr_pairs:
+                                            corr_df = pd.DataFrame(corr_pairs)
+                                            corr_df = corr_df.sort_values('相関係数', key=abs, ascending=False)
+                                            st.dataframe(corr_df.head(20), use_container_width=True)
+                                except Exception as e:
+                                    st.error(f"❌ 相関行列の生成中にエラーが発生しました: {str(e)}")
+                                    import traceback
+                                    with st.expander("詳細なエラー情報", expanded=False):
+                                        st.code(traceback.format_exc())
+                        else:
+                            st.info("ℹ️ 相関行列を作成するには、少なくとも2つの数値変数が必要です。")
+                    
+                    with viz_tabs[2]:
+                        st.subheader("欠損値の可視化")
+                        
+                        missing_data = st.session_state['current_df'].isnull().sum()
+                        missing_data = missing_data[missing_data > 0].sort_values(ascending=False)
+                        
+                        if len(missing_data) > 0:
+                            if st.button("欠損値の可視化を表示", key="btn_show_missing", type="primary"):
+                                try:
+                                    tmp_missing = tempfile.NamedTemporaryFile(delete=False, suffix='.png')
+                                    missing_path = tmp_missing.name
+                                    tmp_missing.close()
+                                    
+                                    preprocessor.visualize_missing_values(st.session_state['current_df'], save_path=missing_path)
+                                    
+                                    if os.path.exists(missing_path) and os.path.getsize(missing_path) > 0:
+                                        with open(missing_path, 'rb') as f:
+                                            missing_image = f.read()
+                                        st.image(missing_image, caption="欠損値の可視化", use_container_width=True)
+                                        try:
+                                            os.remove(missing_path)
+                                        except:
+                                            pass
+                                except Exception as e:
+                                    st.error(f"❌ 欠損値の可視化中にエラーが発生しました: {str(e)}")
+                                    import traceback
+                                    with st.expander("詳細なエラー情報", expanded=False):
+                                        st.code(traceback.format_exc())
+                            
+                            # 欠損値の統計
+                            st.markdown("#### 欠損値の統計")
+                            missing_stats = pd.DataFrame({
+                                '変数名': missing_data.index,
+                                '欠損数': missing_data.values,
+                                '欠損率(%)': (missing_data.values / len(st.session_state['current_df']) * 100).round(2)
+                            })
+                            st.dataframe(missing_stats, use_container_width=True)
+                        else:
+                            st.success("✅ 欠損値はありません。")
+                    
+                    with viz_tabs[3]:
+                        st.subheader("散布図マトリックス")
+                        
+                        if len(num_numeric_cols) >= 2:
+                            selected_cols = st.multiselect(
+                                "可視化する変数を選択（2つ以上）",
+                                num_numeric_cols,
+                                default=num_numeric_cols[:4] if len(num_numeric_cols) >= 4 else num_numeric_cols,
+                                key="scatter_cols"
+                            )
+                            
+                            if len(selected_cols) >= 2:
+                                if st.button("散布図マトリックスを表示", key="btn_show_scatter", type="primary"):
+                                    try:
+                                        import matplotlib.pyplot as plt
+                                        import seaborn as sns
+                                        try:
+                                            import japanize_matplotlib
+                                        except ImportError:
+                                            from data_preprocessor import setup_japanese_font
+                                            setup_japanese_font()
+                                        
+                                        # ペアプロット
+                                        fig = sns.pairplot(st.session_state['current_df'][selected_cols], diag_kind='hist')
+                                        fig.fig.suptitle('散布図マトリックス', y=1.02, fontsize=14)
+                                        st.pyplot(fig.fig, clear_figure=True)
+                                        plt.close(fig.fig)
+                                    except Exception as e:
+                                        st.error(f"❌ 散布図マトリックスの生成中にエラーが発生しました: {str(e)}")
+                                        import traceback
+                                        with st.expander("詳細なエラー情報", expanded=False):
+                                            st.code(traceback.format_exc())
+                            else:
+                                st.warning("⚠️ 散布図マトリックスを作成するには、少なくとも2つの変数を選択してください。")
+                        else:
+                            st.info("ℹ️ 散布図マトリックスを作成するには、少なくとも2つの数値変数が必要です。")
+                    
+                    with viz_tabs[4]:
+                        st.subheader("その他の可視化")
+                        
+                        st.markdown("#### データ分布の概要")
+                        if st.button("データ分布の概要を表示", key="btn_show_overview", type="primary"):
+                            try:
+                                tmp_overview = tempfile.NamedTemporaryFile(delete=False, suffix='.png')
+                                overview_path = tmp_overview.name
+                                tmp_overview.close()
+                                
+                                preprocessor.visualize_data(st.session_state['current_df'], save_path=overview_path)
+                                
+                                if os.path.exists(overview_path) and os.path.getsize(overview_path) > 0:
+                                    with open(overview_path, 'rb') as f:
+                                        overview_image = f.read()
+                                    st.image(overview_image, caption="データ分布の概要", use_container_width=True)
+                                    try:
+                                        os.remove(overview_path)
+                                    except:
+                                        pass
+                            except Exception as e:
+                                st.error(f"❌ データ分布の概要の生成中にエラーが発生しました: {str(e)}")
+                                import traceback
+                                with st.expander("詳細なエラー情報", expanded=False):
+                                    st.code(traceback.format_exc())
+                        
+                        st.markdown("#### 変数間の関係性")
+                        if len(num_numeric_cols) >= 2:
+                            col1 = st.selectbox("X軸の変数", num_numeric_cols, key="scatter_x")
+                            col2 = st.selectbox("Y軸の変数", num_numeric_cols, key="scatter_y")
+                            
+                            if col1 != col2:
+                                if st.button("散布図を表示", key="btn_show_scatter_single", type="primary"):
+                                    try:
+                                        import matplotlib.pyplot as plt
+                                        try:
+                                            import japanize_matplotlib
+                                        except ImportError:
+                                            from data_preprocessor import setup_japanese_font
+                                            setup_japanese_font()
+                                        
+                                        fig, ax = plt.subplots(figsize=(10, 6))
+                                        ax.scatter(st.session_state['current_df'][col1], st.session_state['current_df'][col2], alpha=0.5)
+                                        ax.set_xlabel(col1, fontsize=12)
+                                        ax.set_ylabel(col2, fontsize=12)
+                                        ax.set_title(f'{col1} vs {col2}', fontsize=14)
+                                        ax.grid(True, alpha=0.3)
+                                        plt.tight_layout()
+                                        st.pyplot(fig, clear_figure=True)
+                                        plt.close(fig)
+                                    except Exception as e:
+                                        st.error(f"❌ 散布図の生成中にエラーが発生しました: {str(e)}")
+                                        import traceback
+                                        with st.expander("詳細なエラー情報", expanded=False):
+                                            st.code(traceback.format_exc())
+                            else:
+                                st.warning("⚠️ 異なる変数を選択してください。")
+                        else:
+                            st.info("ℹ️ 散布図を作成するには、少なくとも2つの数値変数が必要です。")
+            
             elif st.session_state['active_tab'] == "高度な機能":
                 st.subheader("高度な分析")
                 
