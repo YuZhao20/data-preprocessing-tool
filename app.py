@@ -1926,18 +1926,18 @@ def main():
                                 df_after_rows = len(processed_df)
                                 df_after_cols = len(processed_df.columns)
                                 
-                                # 実行した処理を記録
-                                operations_performed = []
-                                if missing_strategy != "auto" and missing_strategy != "drop":
-                                    operations_performed.append(f"欠損値処理({missing_strategy})")
-                                if remove_outliers:
-                                    operations_performed.append(f"外れ値処理({outlier_method})")
-                                if len(preprocessor.categorical_columns) > 0:
-                                    operations_performed.append(f"カテゴリエンコーディング({encoding_method})")
-                                if scaling_method:
-                                    operations_performed.append(f"スケーリング({scaling_method})")
-                                if feature_selection and target_col:
-                                    operations_performed.append(f"特徴量選択({k_features}個)")
+                                # 実行した処理を記録（実際に実行された処理のみ）
+                                operations_performed = operations_to_perform.copy()
+                                if "欠損値処理" in operations_performed:
+                                    operations_performed[operations_performed.index("欠損値処理")] = f"欠損値処理({missing_strategy})"
+                                if "外れ値処理" in operations_performed:
+                                    operations_performed[operations_performed.index("外れ値処理")] = f"外れ値処理({outlier_method})"
+                                if "カテゴリエンコーディング" in operations_performed:
+                                    operations_performed[operations_performed.index("カテゴリエンコーディング")] = f"カテゴリエンコーディング({encoding_method})"
+                                if "特徴量スケーリング" in operations_performed:
+                                    operations_performed[operations_performed.index("特徴量スケーリング")] = f"スケーリング({scaling_method})"
+                                if "特徴量選択" in operations_performed:
+                                    operations_performed[operations_performed.index("特徴量選択")] = f"特徴量選択({k_features}個)"
                                 
                                 history_entry = {
                                     'timestamp': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
@@ -2105,6 +2105,19 @@ def main():
                                     key="viz_plot_type"
                                 )
                                 
+                                # カスタマイズオプション
+                                with st.expander("グラフのカスタマイズ", expanded=False):
+                                    col_custom1, col_custom2 = st.columns(2)
+                                    with col_custom1:
+                                        fig_width = st.slider("図の幅", min_value=6, max_value=20, value=10, key="fig_width_num")
+                                        fig_height = st.slider("図の高さ", min_value=4, max_value=15, value=6, key="fig_height_num")
+                                        color = st.color_picker("色を選択", value="#1f77b4", key="color_num")
+                                        font_size = st.slider("フォントサイズ", min_value=8, max_value=20, value=12, key="font_size_num")
+                                    with col_custom2:
+                                        grid_alpha = st.slider("グリッドの透明度", min_value=0.0, max_value=1.0, value=0.3, step=0.1, key="grid_alpha_num")
+                                        bins = st.slider("ビン数（ヒストグラム）", min_value=10, max_value=100, value=30, key="bins_num")
+                                        edge_color = st.color_picker("境界線の色", value="#000000", key="edge_color_num")
+                                
                                 if st.button("グラフを表示", key="btn_show_dist", type="primary"):
                                     try:
                                         import matplotlib.pyplot as plt
@@ -2114,61 +2127,101 @@ def main():
                                             from data_preprocessor import setup_japanese_font
                                             setup_japanese_font()
                                         
+                                        # 一時ファイルに保存
+                                        tmp_plot = tempfile.NamedTemporaryFile(delete=False, suffix='.png')
+                                        plot_path = tmp_plot.name
+                                        tmp_plot.close()
+                                        
                                         if plot_type == "すべて":
-                                            fig, axes = plt.subplots(1, 3, figsize=(18, 5))
+                                            fig, axes = plt.subplots(1, 3, figsize=(fig_width*3, fig_height))
                                             
                                             # ヒストグラム
-                                            st.session_state['current_df'][selected_num_col].hist(bins=30, ax=axes[0], edgecolor='black')
-                                            axes[0].set_title(f'{selected_num_col}のヒストグラム', fontsize=12)
-                                            axes[0].set_xlabel(selected_num_col, fontsize=10)
-                                            axes[0].set_ylabel('頻度', fontsize=10)
-                                            axes[0].grid(True, alpha=0.3)
+                                            st.session_state['current_df'][selected_num_col].hist(
+                                                bins=bins, ax=axes[0], 
+                                                color=color, edgecolor=edge_color
+                                            )
+                                            axes[0].set_title(f'{selected_num_col}のヒストグラム', fontsize=font_size)
+                                            axes[0].set_xlabel(selected_num_col, fontsize=font_size-2)
+                                            axes[0].set_ylabel('頻度', fontsize=font_size-2)
+                                            axes[0].grid(True, alpha=grid_alpha)
                                             
                                             # 箱ひげ図
-                                            st.session_state['current_df'][[selected_num_col]].boxplot(ax=axes[1])
-                                            axes[1].set_title(f'{selected_num_col}の箱ひげ図', fontsize=12)
-                                            axes[1].set_ylabel(selected_num_col, fontsize=10)
-                                            axes[1].grid(True, alpha=0.3)
+                                            bp = axes[1].boxplot(st.session_state['current_df'][selected_num_col].dropna(), patch_artist=True)
+                                            bp['boxes'][0].set_facecolor(color)
+                                            axes[1].set_title(f'{selected_num_col}の箱ひげ図', fontsize=font_size)
+                                            axes[1].set_ylabel(selected_num_col, fontsize=font_size-2)
+                                            axes[1].grid(True, alpha=grid_alpha)
                                             
                                             # 密度プロット
-                                            st.session_state['current_df'][selected_num_col].plot.density(ax=axes[2])
-                                            axes[2].set_title(f'{selected_num_col}の密度プロット', fontsize=12)
-                                            axes[2].set_xlabel(selected_num_col, fontsize=10)
-                                            axes[2].set_ylabel('密度', fontsize=10)
-                                            axes[2].grid(True, alpha=0.3)
+                                            st.session_state['current_df'][selected_num_col].plot.density(ax=axes[2], color=color, linewidth=2)
+                                            axes[2].set_title(f'{selected_num_col}の密度プロット', fontsize=font_size)
+                                            axes[2].set_xlabel(selected_num_col, fontsize=font_size-2)
+                                            axes[2].set_ylabel('密度', fontsize=font_size-2)
+                                            axes[2].grid(True, alpha=grid_alpha)
                                             
                                             plt.tight_layout()
+                                            fig.savefig(plot_path, dpi=300, bbox_inches='tight')
                                             st.pyplot(fig, clear_figure=True)
                                             plt.close(fig)
                                         elif plot_type == "ヒストグラム":
-                                            fig, ax = plt.subplots(figsize=(10, 6))
-                                            st.session_state['current_df'][selected_num_col].hist(bins=30, ax=ax, edgecolor='black')
-                                            ax.set_title(f'{selected_num_col}のヒストグラム', fontsize=14)
-                                            ax.set_xlabel(selected_num_col, fontsize=12)
-                                            ax.set_ylabel('頻度', fontsize=12)
-                                            ax.grid(True, alpha=0.3)
+                                            fig, ax = plt.subplots(figsize=(fig_width, fig_height))
+                                            st.session_state['current_df'][selected_num_col].hist(
+                                                bins=bins, ax=ax, 
+                                                color=color, edgecolor=edge_color
+                                            )
+                                            ax.set_title(f'{selected_num_col}のヒストグラム', fontsize=font_size)
+                                            ax.set_xlabel(selected_num_col, fontsize=font_size-2)
+                                            ax.set_ylabel('頻度', fontsize=font_size-2)
+                                            ax.grid(True, alpha=grid_alpha)
                                             plt.tight_layout()
+                                            fig.savefig(plot_path, dpi=300, bbox_inches='tight')
                                             st.pyplot(fig, clear_figure=True)
                                             plt.close(fig)
                                         elif plot_type == "箱ひげ図":
-                                            fig, ax = plt.subplots(figsize=(8, 6))
-                                            st.session_state['current_df'][[selected_num_col]].boxplot(ax=ax)
-                                            ax.set_title(f'{selected_num_col}の箱ひげ図', fontsize=14)
-                                            ax.set_ylabel(selected_num_col, fontsize=12)
-                                            ax.grid(True, alpha=0.3)
+                                            fig, ax = plt.subplots(figsize=(fig_width, fig_height))
+                                            bp = ax.boxplot(st.session_state['current_df'][selected_num_col].dropna(), patch_artist=True)
+                                            bp['boxes'][0].set_facecolor(color)
+                                            ax.set_title(f'{selected_num_col}の箱ひげ図', fontsize=font_size)
+                                            ax.set_ylabel(selected_num_col, fontsize=font_size-2)
+                                            ax.grid(True, alpha=grid_alpha)
                                             plt.tight_layout()
+                                            fig.savefig(plot_path, dpi=300, bbox_inches='tight')
                                             st.pyplot(fig, clear_figure=True)
                                             plt.close(fig)
                                         elif plot_type == "密度プロット":
-                                            fig, ax = plt.subplots(figsize=(10, 6))
-                                            st.session_state['current_df'][selected_num_col].plot.density(ax=ax)
-                                            ax.set_title(f'{selected_num_col}の密度プロット', fontsize=14)
-                                            ax.set_xlabel(selected_num_col, fontsize=12)
-                                            ax.set_ylabel('密度', fontsize=12)
-                                            ax.grid(True, alpha=0.3)
+                                            fig, ax = plt.subplots(figsize=(fig_width, fig_height))
+                                            st.session_state['current_df'][selected_num_col].plot.density(
+                                                ax=ax, color=color, linewidth=2
+                                            )
+                                            ax.set_title(f'{selected_num_col}の密度プロット', fontsize=font_size)
+                                            ax.set_xlabel(selected_num_col, fontsize=font_size-2)
+                                            ax.set_ylabel('密度', fontsize=font_size-2)
+                                            ax.grid(True, alpha=grid_alpha)
                                             plt.tight_layout()
+                                            fig.savefig(plot_path, dpi=300, bbox_inches='tight')
                                             st.pyplot(fig, clear_figure=True)
                                             plt.close(fig)
+                                        
+                                        # 図をセッション状態に保存
+                                        if os.path.exists(plot_path) and os.path.getsize(plot_path) > 0:
+                                            with open(plot_path, 'rb') as f:
+                                                plot_image = f.read()
+                                            st.session_state['last_plot_image'] = plot_image
+                                            st.session_state['last_plot_filename'] = f"{selected_num_col}_{plot_type}.png"
+                                            
+                                            # ダウンロードボタン
+                                            st.download_button(
+                                                label="📥 図をダウンロード",
+                                                data=plot_image,
+                                                file_name=st.session_state['last_plot_filename'],
+                                                mime="image/png",
+                                                key="download_num_plot"
+                                            )
+                                            
+                                            try:
+                                                os.remove(plot_path)
+                                            except:
+                                                pass
                                     except Exception as e:
                                         st.error(f"❌ グラフの生成中にエラーが発生しました: {str(e)}")
                                         import traceback
