@@ -180,123 +180,198 @@ def main():
     
     # ワークフローガイド（ファイル未アップロード時のみ表示）
     if uploaded_file is None:
-        st.info("""
-        👋 **はじめに**: サイドバーからデータファイルをアップロードしてください。
-        
-        **基本的な使い方**:
-        1. ファイルをアップロード → 2. データを確認・編集 → 3. 前処理設定 → 4. 実行 → 5. ダウンロード
-        """)
-        
-        with st.expander("詳細な使い方ガイド", expanded=False):
-            st.markdown("""
-            ### このツールについて
-            機械学習や統計分析のためのデータ前処理を簡単に行うためのWebアプリケーションです。
-            プログラミングの知識がなくても、直感的な操作でデータの前処理ができます。
-            
-            ### ステップバイステップガイド
-            
-            #### ステップ1: データのアップロード
-            - サイドバーからCSV、Excel、JSONファイルをアップロード
-            - 日本語ファイルの場合は、エンコーディングを選択（通常は「自動検出」でOK）
-            
-            #### ステップ2: データの確認と編集（データタブ）
-            - データの内容を確認
-            - 必要に応じてセル、列、行を編集・削除
-            
-            #### ステップ3: データの理解（分析タブ）
-            - 数値変数とカテゴリ変数の識別
-            - 各変数の統計量を確認
-            - 欠損値の有無を確認
-            
-            #### ステップ4: 前処理設定（サイドバー）
-            - **欠損値処理**: 自動処理（推奨）または手動設定
-            - **外れ値処理**: 必要に応じて有効化
-            - **カテゴリ変数エンコーディング**: 自動選択（推奨）
-            - **特徴量スケーリング**: 必要に応じて選択
-            
-            #### ステップ5: 前処理の実行（前処理タブ）
-            - 「前処理を実行」ボタンをクリック
-            - 処理結果を確認
-            - 処理済みデータをダウンロード
-            
-            ### 初心者向けの推奨設定
-            - **欠損値処理**: 自動（auto）
-            - **外れ値処理**: 無効（必要に応じて有効化）
-            - **カテゴリ変数エンコーディング**: 自動（auto）
-            - **特徴量スケーリング**: なし（必要に応じて選択）
-            """)
+        st.info("👋 **はじめに**: サイドバーからデータファイルをアップロードしてください。")
     
     # ヘルプ表示（ヘルプボタンが押された場合）
     if 'show_help' in st.session_state:
-        with st.expander("ヘルプ", expanded=True):
-            st.markdown("""
-            ### よくある質問
+        st.markdown("---")
+        with st.container():
+            st.markdown("### ヘルプとガイド")
             
-            **Q: どの前処理設定を選べばいいですか？**
-            A: 初心者の方は「自動」設定を推奨します。詳細は各設定のヘルプテキストを参照してください。
+            help_tabs = st.tabs(["使い方ガイド", "前処理のフロー", "よくある質問", "機能一覧"])
             
-            **Q: エラーが発生しました**
-            A: エラーメッセージを確認し、データの形式や設定を見直してください。よくある原因：
-            - データに文字列が含まれている数値列がある
-            - 欠損値が多すぎる
-            - メモリ不足（データが大きすぎる）
+            with help_tabs[0]:
+                st.markdown("""
+                ### このツールについて
+                機械学習や統計分析のためのデータ前処理を簡単に行うためのWebアプリケーションです。
+                プログラミングの知識がなくても、直感的な操作でデータの前処理ができます。
+                
+                ### ステップバイステップガイド
+                
+                #### ステップ1: データのアップロード
+                - サイドバーからCSV、Excel、JSONファイルをアップロード
+                - 日本語ファイルの場合は、エンコーディングを選択（通常は「自動検出」でOK）
+                
+                #### ステップ2: データの確認と編集（データタブ）
+                - データの内容を確認
+                - 必要に応じてセル、列、行を編集・削除
+                
+                #### ステップ3: データの理解（分析タブ）
+                - 数値変数とカテゴリ変数の識別
+                - 各変数の統計量を確認
+                - 欠損値の有無を確認
+                
+                #### ステップ4: 前処理設定（サイドバー）
+                - **欠損値処理**: 自動処理（推奨）または手動設定
+                - **外れ値処理**: 必要に応じて有効化
+                - **カテゴリ変数エンコーディング**: 自動選択（推奨）
+                - **特徴量スケーリング**: 必要に応じて選択
+                
+                #### ステップ5: 前処理の実行（前処理タブ）
+                - 「前処理を実行」ボタンをクリック
+                - 処理結果を確認
+                - 処理済みデータをダウンロード
+                
+                ### 初心者向けの推奨設定
+                - **欠損値処理**: 自動（auto）
+                - **外れ値処理**: 無効（必要に応じて有効化）
+                - **カテゴリ変数エンコーディング**: 自動（auto）
+                - **特徴量スケーリング**: なし（必要に応じて選択）
+                """)
             
-            **Q: 処理が完了しましたが、結果がおかしいです**
-            A: 「履歴」タブで実行した処理を確認し、必要に応じて設定を変更して再実行してください。
+            with help_tabs[1]:
+                st.markdown("""
+                ### 標準的な前処理の流れ
+                
+                #### ステップ1: データの読み込みと確認
+                1. **ファイルをアップロード**: サイドバーからCSV、Excel、JSONファイルをアップロード
+                2. **エンコーディング設定**: 日本語ファイルの場合は適切なエンコーディングを選択
+                3. **データの確認**: 「データ」タブでデータを確認
+                
+                #### ステップ2: データの理解と診断（EDA）
+                1. **データ情報の確認**: 「分析」タブで以下を確認
+                   - 数値変数とカテゴリ変数の識別
+                   - 各変数の値の範囲（最小値、最大値、ユニーク値など）
+                   - 欠損値の有無とパターン
+                2. **データの可視化**: 「可視化」タブで統計量やグラフでデータの分布を確認
+                
+                #### ステップ3: データクリーニング
+                1. **重複データの削除**: 「高度な機能」→「重複削除」で重複を検出・削除
+                2. **異常値の処理**: 業務ルールに基づく異常値の除外（手動編集で対応）
+                
+                #### ステップ4: 外れ値の処理
+                1. **外れ値検出方法の選択**: サイドバーで適切な方法を選択
+                   - **IQR法**: 四分位範囲を使用（一般的）
+                   - **Z-score法**: 標準偏差を使用
+                   - **Isolation Forest**: 機械学習ベース（多変量データに有効）
+                   - **MAD法**: 中央値絶対偏差（外れ値に強い）
+                   - **Winsorize法**: 上下をクリップ
+                   - **Mahalanobis距離**: 多変量外れ値検出
+                2. **処理方法の選択**: 削除またはクリップ
+                
+                #### ステップ5: 欠損値の処理
+                1. **処理方法の選択**: サイドバーで適切な方法を選択
+                   - **auto**: 自動処理（推奨）
+                   - **fill**: 補完（平均値、中央値、最頻値、前後の値）
+                   - **drop**: 削除
+                   - **listwise**: リストワイズ削除（完全ケースのみ）
+                   - **knn**: KNN補完（近傍データから推定）
+                   - **mice**: MICE補完（多重代入法、高精度）
+                2. **欠損フラグの作成**: 欠損自体が情報となる場合に有効
+                
+                #### ステップ6: カテゴリ変数のエンコーディング
+                1. **エンコーディング方法の選択**:
+                   - **auto**: 自動選択（推奨）
+                   - **label**: Label Encoding（順序がある場合）
+                   - **onehot**: One-Hot Encoding（順序がない場合）
+                   - **target**: Target Encoding（ターゲット変数がある場合）
+                   - **frequency**: Frequency Encoding（頻度エンコーディング）
+                
+                #### ステップ7: 特徴量スケーリング
+                1. **スケーリング方法の選択**:
+                   - **standard**: 標準化（平均0、分散1）
+                   - **minmax**: 0-1正規化
+                   - **robust**: Robust scaling（外れ値に強い）
+                   - **log**: 対数変換（右に歪んだ分布に有効）
+                
+                #### ステップ8: 前処理の実行と結果の確認
+                1. 「前処理」タブで「前処理を実行」ボタンをクリック
+                2. 処理結果を確認
+                3. 処理済みデータをダウンロード
+                """)
             
-            **Q: データを元に戻したい**
-            A: 「リセット」ボタンをクリックするか、「データ」タブで「元のデータに戻す」をクリックしてください。
-            """)
+            with help_tabs[2]:
+                st.markdown("""
+                ### よくある質問
+                
+                **Q: どの前処理設定を選べばいいですか？**
+                A: 初心者の方は「自動」設定を推奨します。詳細は各設定のヘルプテキストを参照してください。
+                
+                **Q: エラーが発生しました**
+                A: エラーメッセージを確認し、データの形式や設定を見直してください。よくある原因：
+                - データに文字列が含まれている数値列がある
+                - 欠損値が多すぎる
+                - メモリ不足（データが大きすぎる）
+                
+                **Q: 処理が完了しましたが、結果がおかしいです**
+                A: 「履歴」タブで実行した処理を確認し、必要に応じて設定を変更して再実行してください。
+                
+                **Q: データを元に戻したい**
+                A: 「リセット」ボタンをクリックするか、「データ」タブで「元のデータに戻す」をクリックしてください。
+                
+                **Q: 高度な分析の結果はどこで確認できますか？**
+                A: 各機能の実行後、結果がその場に表示されます。処理済みデータは「データ」タブの「処理済みデータのダウンロード」セクションからダウンロードできます。
+                
+                **Q: 生成された図をダウンロードできますか？**
+                A: はい。「可視化」タブで生成された図にはダウンロードボタンが表示されます。
+                """)
             
-            if st.button("ヘルプを閉じる"):
+            with help_tabs[3]:
+                st.markdown("""
+                ### 機能一覧
+                
+                #### データタブ
+                - データの確認と編集
+                - 列・行の削除、編集、並べ替え
+                - データのリセット
+                - 処理済みデータのダウンロード
+                
+                #### 分析タブ
+                - 数値変数とカテゴリ変数の識別
+                - 基本統計量の表示
+                - 変数ごとの詳細分析
+                
+                #### 前処理タブ
+                - 欠損値処理
+                - 外れ値処理
+                - カテゴリ変数エンコーディング
+                - 特徴量スケーリング
+                - 特徴量選択
+                - 処理済みデータのダウンロード
+                
+                #### 可視化タブ
+                - データ分布の可視化（ヒストグラム、箱ひげ図、密度プロット）
+                - 相関行列の可視化
+                - 欠損値の可視化
+                - 散布図マトリックス
+                - グラフのカスタマイズ
+                - 図のダウンロード
+                
+                #### 統計検定タブ
+                - 正規性検定
+                - 等分散性検定
+                - 独立性検定
+                - VIF分析
+                - 条件数計算
+                
+                #### 高度な機能タブ
+                - 重複削除
+                - 特徴量エンジニアリング
+                - VIF分析
+                - クラス不均衡処理
+                - データ分割
+                - 高度な診断
+                - 特徴量選択（高度）
+                - 次元削減
+                
+                #### 履歴タブ
+                - 実行した処理の履歴を確認
+                - 処理の詳細を表示
+                """)
+            
+            if st.button("ヘルプを閉じる", key="close_help"):
                 del st.session_state['show_help']
                 st.rerun()
-    
-    # 前処理フローの説明
-    with st.expander("データ前処理のフロー", expanded=False):
-        st.markdown("""
-        ### 標準的な前処理の流れ
-        
-        #### ステップ1: データの読み込みと確認
-        1. **ファイルをアップロード**: サイドバーからCSV、Excel、JSONファイルをアップロード
-        2. **エンコーディング設定**: 日本語ファイルの場合は適切なエンコーディングを選択
-        3. **データの確認**: 「データプレビュー・編集」タブでデータを確認
-        
-        #### ステップ2: データの理解と診断（EDA）
-        1. **データ情報の確認**: 「データ情報」タブで以下を確認
-           - 数値変数とカテゴリ変数の識別
-           - 各変数の値の範囲（最小値、最大値、ユニーク値など）
-           - 欠損値の有無とパターン
-        2. **データの可視化**: 統計量やグラフでデータの分布を確認
-        
-        #### ステップ3: データクリーニング
-        1. **重複データの削除**: 「高度な分析」→「重複削除」で重複を検出・削除
-        2. **異常値の処理**: 業務ルールに基づく異常値の除外（手動編集で対応）
-        
-        #### ステップ4: 外れ値の処理
-        1. **外れ値検出方法の選択**: サイドバーで適切な方法を選択
-           - **IQR法**: 四分位範囲を使用（一般的）
-           - **Z-score法**: 標準偏差を使用
-           - **Isolation Forest**: 機械学習ベース（多変量データに有効）
-           - **MAD法**: 中央値絶対偏差（外れ値に強い）
-           - **Winsorize法**: 上下をクリップ
-           - **Mahalanobis距離**: 多変量外れ値検出
-        2. **処理方法の選択**: 削除またはクリップ
-        
-        #### ステップ5: 欠損値の処理
-        1. **処理方法の選択**: サイドバーで適切な方法を選択
-           - **auto**: 自動処理（推奨）
-           - **fill**: 補完（平均値、中央値、最頻値、前後の値）
-           - **drop**: 削除
-           - **listwise**: リストワイズ削除（完全ケースのみ）
-           - **knn**: KNN補完（近傍データから推定）
-           - **mice**: MICE補完（多重代入法、高精度）
-        2. **欠損フラグの作成**: 欠損自体が情報となる場合に有効
-        
-        #### ステップ6: カテゴリ変数のエンコーディング
-        1. **エンコーディング方法の選択**:
-           - **auto**: 自動選択（推奨）
-           - **label**: Label Encoding（順序がある場合）
            - **onehot**: One-Hot Encoding（名義尺度、少数カテゴリ）
            - **ordinal**: 順序エンコーディング（順序尺度）
            - **target**: Target Encoding（高カーディナリティに有効、注意: リーク対策必要）
@@ -2976,6 +3051,14 @@ def main():
                                     )
                                     if len(woe_results) > 0:
                                         st.dataframe(woe_results, use_container_width=True)
+                                        
+                                        # WOE結果のダウンロード
+                                        st.markdown("---")
+                                        st.markdown("#### 結果のダウンロード")
+                                        csv = woe_results.to_csv(index=False, encoding='utf-8-sig')
+                                        b64 = base64.b64encode(csv.encode('utf-8-sig')).decode()
+                                        href = f'<a href="data:file/csv;base64,{b64}" download="woe_results.csv">📥 WOE計算結果をCSV形式でダウンロード</a>'
+                                        st.markdown(href, unsafe_allow_html=True)
                                     else:
                                         st.info("WOE計算に必要なデータが不足しています")
                                 except Exception as e:
@@ -3004,43 +3087,34 @@ def main():
                                     high_vif = vif_results[vif_results["共線性あり"]]
                                     if len(high_vif) > 0:
                                         st.warning(f"⚠️ {len(high_vif)}個の変数で共線性が検出されました: {', '.join(high_vif['変数'].tolist())}")
-                                        
-                                        # 処理履歴に記録
-                                        import datetime
-                                        history_entry = {
-                                            'timestamp': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                                            'operation': 'VIF分析',
-                                            'method': 'VIF計算',
-                                            'parameters': {
-                                                'threshold': vif_threshold
-                                            },
-                                            'before': {'columns': len(st.session_state['current_df'].columns)},
-                                            'after': {'columns': len(st.session_state['current_df'].columns)},
-                                            'changes': {
-                                                'high_vif_count': len(high_vif),
-                                                'high_vif_vars': high_vif['変数'].tolist() if len(high_vif) > 0 else []
-                                            }
-                                        }
-                                        st.session_state['processing_history'].append(history_entry)
                                     else:
                                         st.success("✅ 共線性の問題は検出されませんでした")
-                                        
-                                        # 処理履歴に記録
-                                        import datetime
-                                        history_entry = {
-                                            'timestamp': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                                            'operation': 'VIF分析',
-                                            'method': 'VIF計算',
-                                            'parameters': {
-                                                'threshold': vif_threshold
-                                            },
-                                            'before': {'columns': len(st.session_state['current_df'].columns)},
-                                            'after': {'columns': len(st.session_state['current_df'].columns)},
-                                            'changes': {
-                                                'high_vif_count': 0
-                                            }
+                                    
+                                    # 処理履歴に記録
+                                    import datetime
+                                    history_entry = {
+                                        'timestamp': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                                        'operation': 'VIF分析',
+                                        'method': 'VIF計算',
+                                        'parameters': {
+                                            'threshold': vif_threshold
+                                        },
+                                        'before': {'columns': len(st.session_state['current_df'].columns)},
+                                        'after': {'columns': len(st.session_state['current_df'].columns)},
+                                        'changes': {
+                                            'high_vif_count': len(high_vif) if len(high_vif) > 0 else 0,
+                                            'high_vif_vars': high_vif['変数'].tolist() if len(high_vif) > 0 else []
                                         }
-                                        st.session_state['processing_history'].append(history_entry)
+                                    }
+                                    st.session_state['processing_history'].append(history_entry)
+                                    
+                                    # 結果のダウンロード
+                                    st.markdown("---")
+                                    st.markdown("#### 結果のダウンロード")
+                                    csv = vif_results.to_csv(index=False, encoding='utf-8-sig')
+                                    b64 = base64.b64encode(csv.encode('utf-8-sig')).decode()
+                                    href = f'<a href="data:file/csv;base64,{b64}" download="vif_analysis_results.csv">📥 VIF分析結果をCSV形式でダウンロード</a>'
+                                    st.markdown(href, unsafe_allow_html=True)
                                 else:
                                     st.info("VIF計算に必要な数値変数が不足しています")
                         except Exception as e:
@@ -3211,6 +3285,22 @@ def main():
                                                     st.metric("テストデータ行数", test_size_actual)
                                             
                                             st.session_state['split_result'] = split_result
+                                            
+                                            # 分割データのダウンロード
+                                            st.markdown("---")
+                                            st.markdown("#### 分割データのダウンロード")
+                                            
+                                            # 学習データ
+                                            train_csv = split_result['X_train'].to_csv(index=False, encoding='utf-8-sig')
+                                            train_b64 = base64.b64encode(train_csv.encode('utf-8-sig')).decode()
+                                            train_href = f'<a href="data:file/csv;base64,{train_b64}" download="train_data.csv">📥 学習データ（CSV）</a>'
+                                            st.markdown(train_href, unsafe_allow_html=True)
+                                            
+                                            # テストデータ
+                                            test_csv = split_result['X_test'].to_csv(index=False, encoding='utf-8-sig')
+                                            test_b64 = base64.b64encode(test_csv.encode('utf-8-sig')).decode()
+                                            test_href = f'<a href="data:file/csv;base64,{test_b64}" download="test_data.csv">📥 テストデータ（CSV）</a>'
+                                            st.markdown(test_href, unsafe_allow_html=True)
                                         else:
                                             n_folds = len(split_result['splits'])
                                             
