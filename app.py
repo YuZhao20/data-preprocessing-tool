@@ -2091,9 +2091,6 @@ def main():
                                 
                                 # 可視化機能は「可視化」タブに移動しました
                                 st.info("💡 可視化機能は「可視化」タブで利用できます。")
-                                
-                                # 以下は非表示（可視化タブに移動）
-                                if False and show_visualization:
                                     # 列の識別を確実に実行（可視化前に）
                                     preprocessor.identify_columns(processed_df, categorical_threshold=categorical_threshold)
                                     num_numeric_cols = len([col for col in preprocessor.numerical_columns if col in processed_df.columns])
