@@ -756,7 +756,7 @@ def main():
                 st.session_state['active_tab'] = "データ"
             
             # タブ選択UI
-            tab_options = ["データ", "分析", "前処理", "高度な機能", "履歴"]
+            tab_options = ["データ", "分析", "前処理", "可視化", "高度な機能", "履歴"]
             # 現在のタブのインデックスを取得
             current_index = tab_options.index(st.session_state['active_tab']) if st.session_state['active_tab'] in tab_options else 0
             
@@ -2089,11 +2089,11 @@ def main():
                                             if len(cat_cols) > 10:
                                                 st.info(f"他{len(cat_cols) - 10}個のカテゴリ変数があります。")
                                 
-                                # 可視化（オプション）
-                                st.markdown("---")
-                                st.subheader("データの可視化")
+                                # 可視化機能は「可視化」タブに移動しました
+                                st.info("💡 可視化機能は「可視化」タブで利用できます。")
                                 
-                                if show_visualization:
+                                # 以下は非表示（可視化タブに移動）
+                                if False and show_visualization:
                                     # 列の識別を確実に実行（可視化前に）
                                     preprocessor.identify_columns(processed_df, categorical_threshold=categorical_threshold)
                                     num_numeric_cols = len([col for col in preprocessor.numerical_columns if col in processed_df.columns])
