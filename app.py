@@ -372,31 +372,6 @@ def main():
             if st.button("ヘルプを閉じる", key="close_help"):
                 del st.session_state['show_help']
                 st.rerun()
-           - **onehot**: One-Hot Encoding（名義尺度、少数カテゴリ）
-           - **ordinal**: 順序エンコーディング（順序尺度）
-           - **target**: Target Encoding（高カーディナリティに有効、注意: リーク対策必要）
-           - **frequency**: Frequency Encoding（カテゴリの出現頻度）
-           - **count**: Count Encoding（カテゴリの出現回数）
-        
-        #### ステップ7: 特徴量のスケーリング・正規化
-        1. **スケーリング方法の選択**:
-           - **standard**: 標準化（平均0、分散1、線形モデル、SVM、kNNに有効）
-           - **minmax**: 0-1正規化（ニューラルネット、画像データに有効）
-           - **robust**: Robust scaling（外れ値に強い）
-           - **max_abs**: 最大絶対値スケーリング
-           - **quantile**: 分位数変換（一様分布へ）
-           - **quantile_normal**: 正規分布への変換
-           - **power**: Yeo-Johnson変換（負の値もOK）
-           - **box_cox**: Box-Cox変換（正の値のみ）
-           - **log**: 対数変換（右裾が長い分布に有効）
-           - **sqrt**: 平方根変換
-        
-        #### ステップ8: 特徴量エンジニアリング（オプション）
-        1. **交互作用項の作成**: 「高度な分析」→「特徴量エンジニアリング」
-        2. **多項式特徴の作成**: 非線形関係の捕捉
-        3. **ビニング**: 連続変数をカテゴリに変換
-        
-        #### ステップ9: 特徴量選択（オプション）
         1. **特徴量選択の有効化**: サイドバーでチェック
         2. **選択する特徴量数の指定**: 上位N個を選択
         
