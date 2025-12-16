@@ -1851,35 +1851,41 @@ def main():
                                 # 列の識別
                                 preprocessor.identify_columns(processed_df, categorical_threshold=categorical_threshold)
                                 
-                                # 欠損値処理
-                                if missing_strategy == "mice":
-                                    processed_df = preprocessor.handle_missing_values(
-                                        processed_df, 
-                                        strategy=missing_strategy, 
-                                        method=missing_method,
-                                        create_missing_flags=create_missing_flags,
-                                        n_iterations=n_iterations
-                                    )
-                                elif missing_strategy == "em":
-                                    processed_df = preprocessor.impute_missing_em(
-                                        processed_df,
-                                        max_iter=n_iterations
-                                    )
-                                    if create_missing_flags:
-                                        for col in processed_df.columns:
-                                            if processed_df[col].isnull().sum() > 0:
-                                                flag_col_name = f'{col}_is_missing'
-                                                processed_df[flag_col_name] = processed_df[col].isnull().astype(int)
-                                else:
-                                    processed_df = preprocessor.handle_missing_values(
-                                        processed_df, 
-                                        strategy=missing_strategy, 
-                                        method=missing_method,
-                                        create_missing_flags=create_missing_flags
-                                    )
+                                # 実行する処理を確認（ユーザーが選択した機能だけ実行）
+                                operations_to_perform = []
                                 
-                                # 外れ値処理
+                                # 欠損値処理（選択されている場合のみ）
+                                if missing_strategy and missing_strategy != "none":
+                                    operations_to_perform.append("欠損値処理")
+                                    if missing_strategy == "mice":
+                                        processed_df = preprocessor.handle_missing_values(
+                                            processed_df, 
+                                            strategy=missing_strategy, 
+                                            method=missing_method,
+                                            create_missing_flags=create_missing_flags,
+                                            n_iterations=n_iterations
+                                        )
+                                    elif missing_strategy == "em":
+                                        processed_df = preprocessor.impute_missing_em(
+                                            processed_df,
+                                            max_iter=n_iterations
+                                        )
+                                        if create_missing_flags:
+                                            for col in processed_df.columns:
+                                                if processed_df[col].isnull().sum() > 0:
+                                                    flag_col_name = f'{col}_is_missing'
+                                                    processed_df[flag_col_name] = processed_df[col].isnull().astype(int)
+                                    else:
+                                        processed_df = preprocessor.handle_missing_values(
+                                            processed_df, 
+                                            strategy=missing_strategy, 
+                                            method=missing_method,
+                                            create_missing_flags=create_missing_flags
+                                        )
+                                
+                                # 外れ値処理（選択されている場合のみ）
                                 if remove_outliers:
+                                    operations_to_perform.append("外れ値処理")
                                     processed_df = preprocessor.remove_outliers(
                                         processed_df, 
                                         method=outlier_method,
@@ -1890,8 +1896,9 @@ def main():
                                         action=action
                                     )
                                 
-                                # カテゴリ変数エンコーディング
-                                if len(preprocessor.categorical_columns) > 0:
+                                # カテゴリ変数エンコーディング（カテゴリ変数があり、選択されている場合のみ）
+                                if len(preprocessor.categorical_columns) > 0 and encoding_method and encoding_method != "none":
+                                    operations_to_perform.append("カテゴリエンコーディング")
                                     if encoding_method == "target" and target_col:
                                         processed_df = preprocessor.encode_categorical(
                                             processed_df, 
@@ -1904,20 +1911,26 @@ def main():
                                             method=encoding_method
                                         )
                                 
-                                # 特徴量スケーリング
-                                if scaling_method and len(preprocessor.numerical_columns) > 0:
+                                # 特徴量スケーリング（選択されている場合のみ）
+                                if scaling_method and scaling_method != "none" and len(preprocessor.numerical_columns) > 0:
+                                    operations_to_perform.append("特徴量スケーリング")
                                     processed_df = preprocessor.scale_features(
                                         processed_df, 
                                         method=scaling_method
                                     )
                                 
-                                # 特徴量選択
+                                # 特徴量選択（選択されている場合のみ）
                                 if feature_selection and target_col:
+                                    operations_to_perform.append("特徴量選択")
                                     processed_df = preprocessor.select_features(
                                         processed_df, 
                                         target_col=target_col, 
                                         k=k_features
                                     )
+                                
+                                if not operations_to_perform:
+                                    st.warning("⚠️ 実行する処理が選択されていません。サイドバーで処理を選択してください。")
+                                    st.stop()
                                 
                                 # 処理履歴に記録
                                 import datetime
