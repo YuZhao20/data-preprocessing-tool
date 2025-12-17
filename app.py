@@ -192,7 +192,10 @@ def main():
         with st.container():
             st.markdown("### ヘルプとガイド")
             
-            help_tabs = st.tabs(["使い方ガイド", "前処理のフロー", "よくある質問", "機能一覧"])
+            # ヘルプ画面の最初にメッセージを表示
+            st.info("👈 左側のサイドバーからデータファイルをアップロードしてください")
+            
+            help_tabs = st.tabs(["使い方ガイド", "前処理のフロー", "よくある質問", "機能一覧", "使用例とサンプルデータ"])
             
             with help_tabs[0]:
                 st.markdown("""
