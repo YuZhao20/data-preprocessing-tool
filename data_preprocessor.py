@@ -21,6 +21,7 @@ import seaborn as sns
 import platform
 import os
 import urllib.request
+from pandas.api.types import is_integer_dtype, is_numeric_dtype
 
 # 日本語フォント対応（japanize-matplotlibを使用）
 try:
@@ -454,7 +455,7 @@ class DataPreprocessor:
         potential_categorical = []
         for col in numeric_cols:
             # 整数型（int）で、ユニーク値が閾値以下の場合
-            if df[col].dtype in [np.int64, np.int32, np.int16, np.int8, 'int64', 'int32', 'int16', 'int8']:
+            if is_integer_dtype(df[col]):
                 unique_count = df[col].nunique()
                 # ユニーク値が閾値以下の場合、カテゴリ変数の可能性が高い
                 if unique_count <= categorical_threshold:
@@ -786,7 +787,7 @@ class DataPreprocessor:
                 if len(positive_cols) > 0:
                     df[positive_cols] = self.scaler.fit_transform(df[positive_cols])
                 else:
-                    st.warning("Box-Cox変換: 正の値のみの列が見つかりませんでした")
+                    warnings.warn("Box-Cox変換: 正の値のみの列が見つかりませんでした")
             except Exception as e:
                 print(f"Box-Cox変換エラー: {e}")
         
@@ -844,7 +845,14 @@ class DataPreprocessor:
         y = df[target_col]
         
         # ターゲットが数値かカテゴリかを判定
-        if y.dtype in [np.number] or len(y.unique()) > 10:
+        y_is_numeric = is_numeric_dtype(y)
+        if not y_is_numeric:
+            y_numeric = pd.to_numeric(y, errors='coerce')
+            if y_numeric.notna().mean() > 0.9:
+                y = y_numeric
+                y_is_numeric = True
+
+        if y_is_numeric or len(y.unique()) > 10:
             if score_func is None:
                 score_func = f_regression
             problem_type = 'regression'
@@ -2035,8 +2043,9 @@ class DataPreprocessor:
         X = df.drop(columns=[target_col])
         y = df[target_col]
         
+        y_is_numeric = is_numeric_dtype(y)
         if method == 'random':
-            if stratify and y.dtype not in [np.number] and len(y.unique()) <= 10:
+            if stratify and not y_is_numeric and len(y.unique()) <= 10:
                 X_train, X_test, y_train, y_test = train_test_split(
                     X, y, test_size=test_size, random_state=42, stratify=y
                 )
@@ -2079,7 +2088,7 @@ class DataPreprocessor:
         
         elif method == 'stratified':
             # StratifiedKFold
-            if y.dtype not in [np.number] and len(y.unique()) <= 10:
+            if not y_is_numeric and len(y.unique()) <= 10:
                 skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=42)
                 splits = []
                 for train_idx, test_idx in skf.split(X, y):
@@ -2255,7 +2264,7 @@ class DataPreprocessor:
                         missing_flag = missing_data[col].astype(int)
                         correlations = {}
                         for other_col in other_cols:
-                            if df[other_col].dtype in [np.number]:
+                            if is_numeric_dtype(df[other_col]):
                                 try:
                                     corr = df[other_col].corr(missing_flag)
                                     if not np.isnan(corr):
@@ -2671,7 +2680,14 @@ class DataPreprocessor:
         y = df[target_col]
         
         # ターゲットが数値かカテゴリかを判定
-        if y.dtype in [np.number] and len(y.unique()) > 10:
+        y_is_numeric = is_numeric_dtype(y)
+        if not y_is_numeric:
+            y_numeric = pd.to_numeric(y, errors='coerce')
+            if y_numeric.notna().mean() > 0.9:
+                y = y_numeric
+                y_is_numeric = True
+
+        if y_is_numeric and len(y.unique()) > 10:
             mi_scores = mutual_info_regression(X, y, discrete_features=discrete_features)
             problem_type = 'regression'
         else:
@@ -2737,7 +2753,14 @@ class DataPreprocessor:
         
         # 推定器を自動選択
         if estimator is None:
-            if y.dtype not in [np.number] or len(y.unique()) <= 10:
+            y_is_numeric = is_numeric_dtype(y)
+            if not y_is_numeric:
+                y_numeric = pd.to_numeric(y, errors='coerce')
+                if y_numeric.notna().mean() > 0.9:
+                    y = y_numeric
+                    y_is_numeric = True
+
+            if not y_is_numeric or len(y.unique()) <= 10:
                 estimator = LogisticRegression(max_iter=1000, random_state=42)
             else:
                 estimator = LinearRegression()
@@ -2984,4 +3007,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
