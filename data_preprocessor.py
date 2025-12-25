@@ -12,8 +12,7 @@ from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler, La
 from sklearn.impute import SimpleImputer, KNNImputer
 from sklearn.feature_selection import SelectKBest, f_regression, f_classif
 from sklearn.ensemble import IsolationForest
-import warnings
-warnings.filterwarnings('ignore')
+import logging
 
 # 可視化ライブラリ
 import matplotlib.pyplot as plt
@@ -22,6 +21,10 @@ import platform
 import os
 import urllib.request
 from pandas.api.types import is_integer_dtype, is_numeric_dtype
+from typing import Any, Dict, List, Optional
+import joblib
+
+logger = logging.getLogger(__name__)
 
 # 日本語フォント対応（japanize-matplotlibを使用）
 try:
@@ -31,6 +34,8 @@ except ImportError:
     JAPANIZE_AVAILABLE = False
 
 # 日本語フォント設定（Mac/Windows/Linux/Streamlit Cloud対応）
+ENABLE_FONT_DOWNLOAD = os.getenv("DPT_FONT_DOWNLOAD", "0") == "1"
+
 def setup_japanese_font():
     """日本語フォントを自動設定（確実にフォントを適用）。"""
     import matplotlib.font_manager as fm
@@ -61,6 +66,8 @@ def setup_japanese_font():
             fpath = os.path.join(font_dir, fname)
             if os.path.exists(fpath):
                 return fpath
+        if not ENABLE_FONT_DOWNLOAD:
+            return None
         # ダウンロード試行
         download_targets = [
             ("NotoSansJP-Regular.otf", "https://github.com/googlefonts/noto-cjk/raw/main/Sans/OTF/Japanese/NotoSansJP-Regular.otf"),
@@ -165,7 +172,7 @@ try:
     CHARDET_AVAILABLE = True
 except ImportError:
     CHARDET_AVAILABLE = False
-    print("警告: chardetがインストールされていません。エンコーディングの自動検出ができません。")
+    logger.warning("chardetがインストールされていません。エンコーディングの自動検出ができません。")
 
 
 class DataPreprocessor:
@@ -174,7 +181,7 @@ class DataPreprocessor:
     様々な前処理操作を自動的に実行
     """
     
-    def __init__(self):
+    def __init__(self) -> None:
         self.scaler = None
         self.imputer = None
         self.label_encoders = {}
@@ -186,8 +193,21 @@ class DataPreprocessor:
         self.fitted_ = False  # fit済みかどうか
         self.transformers_ = {}  # 各変換器を保存
         self.fit_params_ = {}  # fit時のパラメータを保存
+
+    def _validate_dataframe(self, df: pd.DataFrame, allow_empty: bool = False) -> None:
+        if not isinstance(df, pd.DataFrame):
+            raise TypeError("dfはpandas.DataFrameである必要があります。")
+        if not allow_empty and df.empty:
+            raise ValueError("dfが空です。データを読み込んでから実行してください。")
+
+    def _validate_columns(self, df: pd.DataFrame, columns: Optional[List[str]], label: str) -> None:
+        if columns is None:
+            return
+        missing = [col for col in columns if col not in df.columns]
+        if missing:
+            raise ValueError(f"{label}に存在しない列が含まれています: {missing}")
         
-    def detect_encoding(self, file_path):
+    def detect_encoding(self, file_path: str) -> Optional[str]:
         """
         ファイルのエンコーディングを自動検出
         
@@ -229,7 +249,7 @@ class DataPreprocessor:
             print(f"エンコーディング検出中にエラーが発生しました: {e}")
             return 'utf-8'
     
-    def detect_file_structure(self, file_path, n_rows=10):
+    def detect_file_structure(self, file_path: str, n_rows: int = 10) -> Dict[str, Any]:
         """
         ファイルの構造を自動検出（ヘッダー行、データ開始行など）
         
@@ -300,9 +320,10 @@ class DataPreprocessor:
             print(f"ファイル構造の検出中にエラー: {e}")
             return {'header': 0, 'skiprows': None}
     
-    def load_data(self, file_path, encoding=None, auto_detect_encoding=True, 
-                  auto_detect_structure=True, header='auto', skiprows=None, 
-                  index_col=None, **kwargs):
+    def load_data(self, file_path: str, encoding: Optional[str] = None,
+                  auto_detect_encoding: bool = True, auto_detect_structure: bool = True,
+                  header: Any = 'auto', skiprows: Optional[Any] = None,
+                  index_col: Optional[Any] = None, **kwargs: Any) -> pd.DataFrame:
         """
         データファイルを読み込む（日本語文字化け対策・構造自動検出付き）
         
@@ -423,7 +444,8 @@ class DataPreprocessor:
             print("- エンコーディングを明示的に指定: encoding='shift_jis' など")
             raise
     
-    def identify_columns(self, df, categorical_threshold=10, explicit_categorical=None):
+    def identify_columns(self, df: pd.DataFrame, categorical_threshold: int = 10,
+                         explicit_categorical: Optional[List[str]] = None) -> List[List[str]]:
         """
         数値列とカテゴリ列を自動識別
         
@@ -441,6 +463,8 @@ class DataPreprocessor:
         tuple
             (数値列のリスト, カテゴリ列のリスト)
         """
+        self._validate_dataframe(df)
+        self._validate_columns(df, explicit_categorical, "explicit_categorical")
         # 明示的に指定されたカテゴリ変数
         if explicit_categorical is None:
             explicit_categorical = []
@@ -476,8 +500,9 @@ class DataPreprocessor:
         
         return self.numerical_columns, self.categorical_columns
     
-    def handle_missing_values(self, df, strategy='auto', method='mean', columns=None, 
-                             create_missing_flags=False, n_iterations=5):
+    def handle_missing_values(self, df: pd.DataFrame, strategy: str = 'auto', method: str = 'mean',
+                             columns: Optional[List[str]] = None, create_missing_flags: bool = False,
+                             n_iterations: int = 5) -> pd.DataFrame:
         """
         欠損値を処理
         
@@ -501,6 +526,8 @@ class DataPreprocessor:
         pd.DataFrame
             処理後のデータフレーム
         """
+        self._validate_dataframe(df)
+        self._validate_columns(df, columns, "columns")
         df = df.copy()
         
         if columns is None:
@@ -581,8 +608,9 @@ class DataPreprocessor:
         
         return df
     
-    def encode_categorical(self, df, method='auto', columns=None, target_col=None, 
-                          cv_folds=5, smoothing=1.0):
+    def encode_categorical(self, df: pd.DataFrame, method: str = 'auto',
+                          columns: Optional[List[str]] = None, target_col: Optional[str] = None,
+                          cv_folds: int = 5, smoothing: float = 1.0) -> pd.DataFrame:
         """
         カテゴリ変数をエンコーディング
         
@@ -606,6 +634,8 @@ class DataPreprocessor:
         pd.DataFrame
             処理後のデータフレーム
         """
+        self._validate_dataframe(df)
+        self._validate_columns(df, columns, "columns")
         df = df.copy()
         
         if columns is None:
@@ -718,7 +748,8 @@ class DataPreprocessor:
         
         return df
     
-    def scale_features(self, df, method='standard', columns=None):
+    def scale_features(self, df: pd.DataFrame, method: str = 'standard',
+                      columns: Optional[List[str]] = None) -> pd.DataFrame:
         """
         特徴量をスケーリング（正規化）
         
@@ -738,6 +769,8 @@ class DataPreprocessor:
         """
         from sklearn.preprocessing import MaxAbsScaler, QuantileTransformer, PowerTransformer
         
+        self._validate_dataframe(df)
+        self._validate_columns(df, columns, "columns")
         df = df.copy()
         
         if columns is None:
@@ -787,7 +820,7 @@ class DataPreprocessor:
                 if len(positive_cols) > 0:
                     df[positive_cols] = self.scaler.fit_transform(df[positive_cols])
                 else:
-                    warnings.warn("Box-Cox変換: 正の値のみの列が見つかりませんでした")
+                    logger.warning("Box-Cox変換: 正の値のみの列が見つかりませんでした")
             except Exception as e:
                 print(f"Box-Cox変換エラー: {e}")
         
@@ -812,7 +845,8 @@ class DataPreprocessor:
         
         return df
     
-    def select_features(self, df, target_col, k='auto', score_func=None):
+    def select_features(self, df: pd.DataFrame, target_col: str, k: str = 'auto',
+                        score_func: Optional[Any] = None) -> pd.DataFrame:
         """
         特徴量選択
         
@@ -832,6 +866,7 @@ class DataPreprocessor:
         pd.DataFrame
             選択後のデータフレーム
         """
+        self._validate_dataframe(df)
         if target_col not in df.columns:
             return df
         
@@ -875,9 +910,11 @@ class DataPreprocessor:
         
         return df_selected
     
-    def remove_outliers(self, df, method='iqr', columns=None, contamination=0.1, 
-                       z_threshold=3.0, iqr_multiplier=1.5, random_state=42,
-                       winsorize_limits=(0.01, 0.99), action='remove'):
+    def remove_outliers(self, df: pd.DataFrame, method: str = 'iqr',
+                       columns: Optional[List[str]] = None, contamination: float = 0.1,
+                       z_threshold: float = 3.0, iqr_multiplier: float = 1.5,
+                       random_state: int = 42, winsorize_limits: tuple = (0.01, 0.99),
+                       action: str = 'remove') -> pd.DataFrame:
         """
         外れ値を処理（除去またはクリップ）
         
@@ -907,6 +944,8 @@ class DataPreprocessor:
         pd.DataFrame
             処理後のデータフレーム
         """
+        self._validate_dataframe(df)
+        self._validate_columns(df, columns, "columns")
         df = df.copy()
         
         if columns is None:
@@ -1039,16 +1078,16 @@ class DataPreprocessor:
         
         return df
     
-    def preprocess_pipeline(self, file_path, target_col=None, 
-                          missing_strategy='auto', 
-                          encoding_method='auto',
-                          scaling_method='standard',
-                          remove_outliers_flag=False,
-                          feature_selection=False,
-                          k_features='auto',
-                          categorical_threshold=10,
-                          explicit_categorical=None,
-                          **load_kwargs):
+    def preprocess_pipeline(self, file_path: str, target_col: Optional[str] = None,
+                          missing_strategy: str = 'auto',
+                          encoding_method: str = 'auto',
+                          scaling_method: str = 'standard',
+                          remove_outliers_flag: bool = False,
+                          feature_selection: bool = False,
+                          k_features: str = 'auto',
+                          categorical_threshold: int = 10,
+                          explicit_categorical: Optional[List[str]] = None,
+                          **load_kwargs: Any) -> pd.DataFrame:
         """
         完全な前処理パイプラインを実行
         
@@ -1115,7 +1154,8 @@ class DataPreprocessor:
         print("\n前処理が完了しました！")
         return df
     
-    def save_processed_data(self, df, output_path, encoding='utf-8-sig'):
+    def save_processed_data(self, df: pd.DataFrame, output_path: str,
+                            encoding: str = 'utf-8-sig') -> None:
         """
         前処理済みデータを保存（日本語文字化け対策付き）
         
@@ -1128,6 +1168,7 @@ class DataPreprocessor:
         encoding : str
             保存時のエンコーディング（デフォルト: 'utf-8-sig' - Excel互換）
         """
+        self._validate_dataframe(df, allow_empty=True)
         output_path_lower = output_path.lower()
         
         if output_path_lower.endswith('.csv'):
@@ -1190,6 +1231,39 @@ class DataPreprocessor:
                     print(f"    {val}: {count} ({count/len(df)*100:.1f}%)")
         
         print("\n" + "=" * 80)
+
+    def save_pipeline(self, output_path: str) -> None:
+        """学習済み前処理パイプラインを保存。"""
+        payload = {
+            "scaler": self.scaler,
+            "imputer": self.imputer,
+            "label_encoders": self.label_encoders,
+            "onehot_encoder": self.onehot_encoder,
+            "feature_selector": self.feature_selector,
+            "categorical_columns": self.categorical_columns,
+            "numerical_columns": self.numerical_columns,
+            "selected_features": self.selected_features,
+            "fitted_": self.fitted_,
+            "transformers_": self.transformers_,
+            "fit_params_": self.fit_params_,
+        }
+        joblib.dump(payload, output_path)
+
+    def load_pipeline(self, input_path: str) -> "DataPreprocessor":
+        """保存された前処理パイプラインを読み込み。"""
+        payload = joblib.load(input_path)
+        self.scaler = payload.get("scaler")
+        self.imputer = payload.get("imputer")
+        self.label_encoders = payload.get("label_encoders", {})
+        self.onehot_encoder = payload.get("onehot_encoder")
+        self.feature_selector = payload.get("feature_selector")
+        self.categorical_columns = payload.get("categorical_columns", [])
+        self.numerical_columns = payload.get("numerical_columns", [])
+        self.selected_features = payload.get("selected_features")
+        self.fitted_ = payload.get("fitted_", False)
+        self.transformers_ = payload.get("transformers_", {})
+        self.fit_params_ = payload.get("fit_params_", {})
+        return self
     
     def visualize_data(self, df, figsize=(15, 10), save_path=None, dpi=300):
         """
