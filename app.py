@@ -14,6 +14,28 @@ import tempfile
 from data_preprocessor import DataPreprocessor
 import base64
 
+LARGE_FILE_MB = 50
+LARGE_ROW_THRESHOLD = 200_000
+LARGE_MEMORY_MB = 200
+
+def format_mb(value_mb):
+    if value_mb is None:
+        return "N/A"
+    return f"{value_mb:.1f} MB"
+
+def estimate_df_memory_mb(df):
+    try:
+        return df.memory_usage(deep=True).sum() / (1024 ** 2)
+    except Exception:
+        return None
+
+def is_large_dataset(df, memory_mb=None):
+    if df is None:
+        return False
+    if memory_mb is None:
+        memory_mb = estimate_df_memory_mb(df)
+    return len(df) >= LARGE_ROW_THRESHOLD or (memory_mb is not None and memory_mb >= LARGE_MEMORY_MB)
+
 # ページ設定
 st.set_page_config(
     page_title="データ前処理ツール",
@@ -388,8 +410,8 @@ def main():
         selected_encoding = None
         if uploaded_file is not None:
             # ファイル情報をコンパクトに表示
-            file_size = uploaded_file.size / 1024  # KB
-            st.success(f"**{uploaded_file.name}** ({file_size:.1f} KB)")
+            file_size_mb = uploaded_file.size / (1024 * 1024)
+            st.success(f"**{uploaded_file.name}** ({file_size_mb:.2f} MB)")
             
             # エンコーディング選択（CSV、Excel、JSONファイルすべてに対応）
             file_ext = os.path.splitext(uploaded_file.name)[1].lower()
@@ -420,6 +442,38 @@ def main():
                 selected_encoding = "utf-8"
             else:
                 selected_encoding = None
+
+            st.markdown("### パフォーマンス設定")
+            st.caption("大規模データの読み込みや表示を軽くする設定です")
+
+            default_light_mode = file_size_mb >= LARGE_FILE_MB
+            light_mode = st.checkbox(
+                "軽量読み込み（先頭N行のみ）",
+                value=default_light_mode,
+                help=f"{LARGE_FILE_MB}MB以上のファイルでは自動的にオンになります"
+            )
+            preview_rows = st.number_input(
+                "先頭から読み込む行数",
+                min_value=100,
+                max_value=1_000_000,
+                value=50_000 if default_light_mode else 100_000,
+                step=1000,
+                disabled=not light_mode
+            )
+            display_rows = st.number_input(
+                "画面に表示する最大行数",
+                min_value=100,
+                max_value=50_000,
+                value=5_000,
+                step=500,
+                help="表示を軽くするための上限です"
+            )
+            if default_light_mode and not light_mode:
+                st.warning("大容量ファイルです。軽量読み込みを推奨します。")
+        else:
+            light_mode = False
+            preview_rows = 100_000
+            display_rows = 5_000
         
         st.markdown("---")
         st.markdown("## 前処理設定")
@@ -628,15 +682,42 @@ def main():
         try:
             # データを読み込む
             preprocessor = DataPreprocessor()
+            load_kwargs = {}
+            file_ext = os.path.splitext(uploaded_file.name)[1].lower()
+            if light_mode and file_ext in ['.csv', '.xlsx', '.xls']:
+                load_kwargs['nrows'] = int(preview_rows)
+            elif light_mode and file_ext not in ['.csv', '.xlsx', '.xls']:
+                st.warning("⚠️ この形式は先頭N行のみの読み込みに対応していません。全件読み込みになります。")
             
             with st.spinner("データを読み込んでいます..."):
                 # エンコーディングを指定
                 if selected_encoding is not None:
-                    df = preprocessor.load_data(tmp_path, encoding=selected_encoding, auto_detect_encoding=False, auto_detect_structure=True)
+                    df = preprocessor.load_data(
+                        tmp_path,
+                        encoding=selected_encoding,
+                        auto_detect_encoding=False,
+                        auto_detect_structure=True,
+                        **load_kwargs
+                    )
                 else:
-                    df = preprocessor.load_data(tmp_path, auto_detect_encoding=True, auto_detect_structure=True)
+                    df = preprocessor.load_data(
+                        tmp_path,
+                        auto_detect_encoding=True,
+                        auto_detect_structure=True,
+                        **load_kwargs
+                    )
             
-            st.success(f"✅ データの読み込みが完了しました: {df.shape[0]}行 × {df.shape[1]}列")
+            memory_mb = estimate_df_memory_mb(df)
+            large_data = is_large_dataset(df, memory_mb)
+            st.session_state['data_memory_mb'] = memory_mb
+            st.session_state['large_data'] = large_data
+
+            load_message = f"✅ データの読み込みが完了しました: {df.shape[0]}行 × {df.shape[1]}列"
+            if light_mode and 'nrows' in load_kwargs:
+                load_message += f"（先頭 {load_kwargs['nrows']:,} 行のプレビュー）"
+            st.success(load_message)
+            if large_data:
+                st.warning("大規模データのため、一部機能は軽量表示で実行されます。")
             
             # セッション状態にデータを保存
             if 'original_df' not in st.session_state or st.session_state.get('file_name') != uploaded_file.name:
@@ -673,6 +754,14 @@ def main():
             if st.session_state['active_tab'] == "データ":
                 st.markdown("### データの確認と編集")
                 st.caption("データの内容を確認し、必要に応じて編集できます")
+
+                data_memory_mb = st.session_state.get('data_memory_mb')
+                data_rows = len(st.session_state['current_df']) if 'current_df' in st.session_state else 0
+                data_cols = len(st.session_state['current_df'].columns) if 'current_df' in st.session_state else 0
+                metric_cols = st.columns(3)
+                metric_cols[0].metric("行数", f"{data_rows:,}")
+                metric_cols[1].metric("列数", f"{data_cols:,}")
+                metric_cols[2].metric("推定メモリ使用量", format_mb(data_memory_mb))
                 
                 # 処理済みデータのダウンロード（現在のデータフレーム）
                 if 'current_df' in st.session_state and st.session_state['current_df'] is not None:
@@ -708,30 +797,39 @@ def main():
                     horizontal=True,
                     help="編集モードでは、セルを直接クリックして編集できます"
                 )
+
+                current_df = st.session_state['current_df']
+                display_df = current_df.head(int(display_rows))
+                if len(current_df) > display_rows:
+                    st.info(f"表示を軽くするため、先頭 {int(display_rows):,} 行のみ表示しています。")
                 
                 if edit_mode == "セル編集":
-                    # 参照番号付きでデータを表示（列番号と行番号を表示）
-                    df_display = st.session_state['current_df'].copy()
-                    df_display.index.name = '行番号'
-                    # 列名に番号を追加（表示用）
-                    original_cols = df_display.columns.tolist()
-                    df_display.columns = [f"[{i}] {col}" for i, col in enumerate(original_cols)]
-                    
-                    # Streamlitのdata_editorを使用（直接編集可能）
-                    edited_df = st.data_editor(
-                        df_display,
-                        use_container_width=True,
-                        height=400,
-                        num_rows="dynamic",  # 行の追加・削除が可能
-                        key="data_editor"
-                    )
-                    
-                    # 列名から番号を除去して元に戻す
-                    if not edited_df.equals(df_display):
-                        edited_df.columns = [col.split('] ')[1] if '] ' in col else col for col in edited_df.columns]
-                        st.session_state['current_df'] = edited_df
-                        st.success("✅ データが更新されました")
-                        st.rerun()
+                    if st.session_state.get('large_data'):
+                        st.warning("大規模データのためセル編集は無効です。軽量読み込みを有効にするか、行数を減らしてください。")
+                        st.dataframe(display_df, use_container_width=True, height=400)
+                    else:
+                        # 参照番号付きでデータを表示（列番号と行番号を表示）
+                        df_display = current_df.copy()
+                        df_display.index.name = '行番号'
+                        # 列名に番号を追加（表示用）
+                        original_cols = df_display.columns.tolist()
+                        df_display.columns = [f"[{i}] {col}" for i, col in enumerate(original_cols)]
+                        
+                        # Streamlitのdata_editorを使用（直接編集可能）
+                        edited_df = st.data_editor(
+                            df_display,
+                            use_container_width=True,
+                            height=400,
+                            num_rows="dynamic",  # 行の追加・削除が可能
+                            key="data_editor"
+                        )
+                        
+                        # 列名から番号を除去して元に戻す
+                        if not edited_df.equals(df_display):
+                            edited_df.columns = [col.split('] ')[1] if '] ' in col else col for col in edited_df.columns]
+                            st.session_state['current_df'] = edited_df
+                            st.success("✅ データが更新されました")
+                            st.rerun()
                 
                 elif edit_mode == "列・行操作":
                     # データを参照番号付きで表示
@@ -1078,10 +1176,10 @@ def main():
                                     st.exception(e)
                     
                     # データ表示
-                    st.dataframe(st.session_state['current_df'], use_container_width=True, height=400)
+                    st.dataframe(display_df, use_container_width=True, height=400)
                 else:
                     # 閲覧モード（通常の表示）
-                    st.dataframe(st.session_state['current_df'], use_container_width=True, height=500)
+                    st.dataframe(display_df, use_container_width=True, height=500)
                 
                 # 追加の編集機能（削除、置換、並べ替え、挿入・追加、入れ替え）
                 st.markdown("---")
@@ -3778,4 +3876,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
