@@ -10,8 +10,12 @@ def render_header() -> None:
         if st.button("← 戻る", use_container_width=True, help="ひとつ前のページに戻る"):
             if 'show_full_history' in st.session_state:
                 del st.session_state['show_full_history']
+                st.rerun()
+                return
             if 'show_help' in st.session_state:
                 del st.session_state['show_help']
+                st.rerun()
+                return
             if 'active_tab' in st.session_state:
                 tab_options = ["データ", "分析", "前処理", "可視化", "統計検定", "高度な機能", "履歴"]
                 current_index = tab_options.index(st.session_state['active_tab']) if st.session_state['active_tab'] in tab_options else 0
@@ -43,6 +47,61 @@ def render_header() -> None:
 
 
 def render_recent_history() -> None:
+    if 'show_full_history' in st.session_state and st.session_state['show_full_history']:
+        st.markdown("---")
+        st.markdown("### 処理履歴（全件）")
+        
+        if len(st.session_state.get('processing_history', [])) == 0:
+            st.info("まだ処理履歴がありません。")
+            if st.button("閉じる", use_container_width=True):
+                del st.session_state['show_full_history']
+                st.rerun()
+            return
+        
+        history = st.session_state['processing_history'][::-1]
+        
+        for idx, entry in enumerate(history):
+            changes_summary = []
+            if 'rows_removed' in entry.get('changes', {}):
+                changes_summary.append(f"行-{entry['changes']['rows_removed']}")
+            if 'rows_changed' in entry.get('changes', {}):
+                change = entry['changes']['rows_changed']
+                if change != 0:
+                    changes_summary.append(f"行{change:+d}")
+            if 'columns_added' in entry.get('changes', {}):
+                changes_summary.append(f"列+{entry['changes']['columns_added']}")
+            if 'columns_changed' in entry.get('changes', {}):
+                change = entry['changes']['columns_changed']
+                if change != 0:
+                    changes_summary.append(f"列{change:+d}")
+            
+            changes_str = " | ".join(changes_summary) if changes_summary else "変更なし"
+            
+            before_info = []
+            after_info = []
+            if 'rows' in entry.get('before', {}):
+                before_info.append(f"{entry['before']['rows']}行")
+            if 'columns' in entry.get('before', {}):
+                before_info.append(f"{entry['before']['columns']}列")
+            if 'rows' in entry.get('after', {}):
+                after_info.append(f"{entry['after']['rows']}行")
+            if 'columns' in entry.get('after', {}):
+                after_info.append(f"{entry['after']['columns']}列")
+            
+            with st.expander(f"{entry['operation']} - {entry['timestamp']}", expanded=(idx < 3)):
+                st.write(f"**方法**: {entry.get('method', 'N/A')}")
+                st.write(f"**変更**: {changes_str}")
+                st.write(f"**データ**: {', '.join(before_info)} → {', '.join(after_info)}")
+                if 'parameters' in entry and entry['parameters']:
+                    st.markdown("**詳細パラメータ**:")
+                    param_text = "\n".join([f"- **{key}**: {value}" for key, value in entry['parameters'].items()])
+                    st.markdown(param_text)
+        
+        if st.button("閉じる", use_container_width=True):
+            del st.session_state['show_full_history']
+            st.rerun()
+        return
+    
     if len(st.session_state.get('processing_history', [])) == 0:
         return
 
