@@ -63,28 +63,28 @@ st.markdown("""
         transition: all 0.3s ease;
     }
     h1 {
-        color:
-        border-bottom: 3px solid
+        color: #1f77b4;
+        border-bottom: 3px solid #1f77b4;
         padding-bottom: 0.5rem;
     }
     h2 {
-        color:
-        border-bottom: 2px solid
+        color: #2c3e50;
+        border-bottom: 2px solid #ecf0f1;
         padding-bottom: 0.3rem;
         margin-top: 1.5rem;
     }
     h3 {
-        color:
+        color: #34495e;
     }
     .success-box {
         padding: 1rem;
         border-radius: 0.5rem;
-        background-color:
-        border: 1px solid
+        background-color: #d4edda;
+        border: 1px solid #c3e6cb;
         margin: 1rem 0;
     }
     .info-card {
-        background: linear-gradient(135deg,
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
         padding: 1.5rem;
         border-radius: 0.75rem;
@@ -92,14 +92,14 @@ st.markdown("""
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     }
     .metric-card {
-        background:
+        background: #f8f9fa;
         padding: 1rem;
         border-radius: 0.5rem;
-        border-left: 4px solid
+        border-left: 4px solid #1f77b4;
         margin: 0.5rem 0;
     }
     [data-testid="stSidebar"] {
-        background-color:
+        background-color: #f0f2f6;
     }
     .stTabs [data-baseweb="tab-list"] {
         gap: 8px;
@@ -122,8 +122,129 @@ st.markdown("""
         display: none !important;
     }
 </style>
+""", unsafe_allow_html=True)
 
-            elif st.session_state['active_tab'] == "高度な機能":
+if 'current_df' not in st.session_state:
+    st.session_state['current_df'] = None
+if 'original_df' not in st.session_state:
+    st.session_state['original_df'] = None
+if 'processing_history' not in st.session_state:
+    st.session_state['processing_history'] = []
+
+preprocessor = DataPreprocessor()
+
+render_header()
+
+if st.session_state['current_df'] is None:
+    st.info("👈 左側のサイドバーからデータファイルをアップロードしてください")
+    render_help()
+    render_recent_history()
+else:
+    if 'active_tab' not in st.session_state:
+        st.session_state['active_tab'] = "データ"
+
+    tabs = st.tabs(["データ", "分析", "前処理", "可視化", "統計検定", "高度な機能", "履歴"])
+
+    with tabs[0]:
+        st.subheader("データの確認と編集")
+        st.dataframe(st.session_state['current_df'], use_container_width=True)
+
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("元のデータに戻す"):
+                if st.session_state['original_df'] is not None:
+                    st.session_state['current_df'] = st.session_state['original_df'].copy()
+                    st.success("元のデータに戻しました")
+                    st.rerun()
+
+        with col2:
+            csv = st.session_state['current_df'].to_csv(index=False, encoding='utf-8-sig')
+            b64 = base64.b64encode(csv.encode('utf-8-sig')).decode()
+            href = f'<a href="data:file/csv;base64,{b64}" download="processed_data.csv">📥 処理済みデータをダウンロード</a>'
+            st.markdown(href, unsafe_allow_html=True)
+
+    with tabs[1]:
+        st.subheader("データ分析")
+        categorical_threshold = st.slider("カテゴリ変数の閾値（ユニーク値の数）", min_value=2, max_value=50, value=10)
+
+        preprocessor.identify_columns(st.session_state['current_df'], categorical_threshold=categorical_threshold)
+        numerical_cols = preprocessor.numerical_columns
+        categorical_cols = preprocessor.categorical_columns
+
+        col1, col2 = st.columns(2)
+        with col1:
+            st.metric("数値変数", len(numerical_cols))
+        with col2:
+            st.metric("カテゴリ変数", len(categorical_cols))
+
+        if numerical_cols:
+            st.subheader("基本統計量（数値変数）")
+            st.dataframe(st.session_state['current_df'][numerical_cols].describe(), use_container_width=True)
+
+    with tabs[2]:
+        st.subheader("データ前処理")
+        missing_strategy = st.selectbox("欠損値処理", ["auto", "drop", "fill (mean)", "fill (median)", "fill (mode)", "knn"])
+        outlier_method = st.selectbox("外れ値処理", ["none", "iqr", "zscore", "isolation_forest"])
+        encoding_method = st.selectbox("カテゴリ変数エンコーディング", ["auto", "label", "onehot", "target"])
+        scaling_method = st.selectbox("特徴量スケーリング", ["none", "standard", "minmax", "robust"])
+        feature_selection = st.checkbox("特徴量選択を実行", value=False)
+
+        if st.button("前処理を実行", type="primary"):
+            try:
+                df_before = len(st.session_state['current_df'])
+                df_before_cols = len(st.session_state['current_df'].columns)
+
+                st.session_state['current_df'] = preprocessor.preprocess(
+                    st.session_state['current_df'],
+                    missing_strategy=missing_strategy,
+                    outlier_method=outlier_method,
+                    encoding_method=encoding_method,
+                    scaling_method=scaling_method,
+                    feature_selection=feature_selection
+                )
+
+                df_after = len(st.session_state['current_df'])
+                df_after_cols = len(st.session_state['current_df'].columns)
+
+                import datetime
+                history_entry = {
+                    'timestamp': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                    'operation': '前処理',
+                    'method': f'{missing_strategy}/{outlier_method}/{encoding_method}/{scaling_method}',
+                    'before': {'rows': df_before, 'columns': df_before_cols},
+                    'after': {'rows': df_after, 'columns': df_after_cols},
+                    'changes': {
+                        'rows_changed': df_after - df_before,
+                        'columns_changed': df_after_cols - df_before_cols
+                    }
+                }
+                st.session_state['processing_history'].append(history_entry)
+
+                st.success(f"✅ 前処理完了: {df_before}行 → {df_after}行, {df_before_cols}列 → {df_after_cols}列")
+            except Exception as e:
+                st.error(f"エラー: {e}")
+
+    with tabs[3]:
+        st.subheader("データ可視化")
+        if numerical_cols:
+            selected_col = st.selectbox("可視化する列を選択", numerical_cols)
+            chart_type = st.selectbox("チャートタイプ", ["histogram", "box", "density"])
+            if st.button("グラフを表示"):
+                fig = preprocessor.visualize_distribution(st.session_state['current_df'], selected_col, chart_type)
+                if fig:
+                    st.pyplot(fig)
+
+    with tabs[4]:
+        st.subheader("統計検定")
+        if numerical_cols:
+            test_col = st.selectbox("検定する列を選択", numerical_cols, key="test_col")
+            test_type = st.selectbox("検定タイプ", ["normality", "variance", "independence"], key="test_type")
+            if st.button("検定を実行"):
+                result = preprocessor.statistical_test(st.session_state['current_df'], test_col, test_type)
+                if result:
+                    st.write(result)
+
+    with tabs[5]:
                 st.subheader("高度な分析")
 
                 analysis_tabs = st.tabs([
@@ -326,7 +447,6 @@ st.markdown("""
                                         st.dataframe(woe_results, use_container_width=True)
 
                                         st.markdown("---")
-                                        st.markdown("
                                         csv = woe_results.to_csv(index=False, encoding='utf-8-sig')
                                         b64 = base64.b64encode(csv.encode('utf-8-sig')).decode()
                                         href = f'<a href="data:file/csv;base64,{b64}" download="woe_results.csv">📥 WOE計算結果をCSV形式でダウンロード</a>'
@@ -380,7 +500,6 @@ st.markdown("""
                                     st.session_state['processing_history'].append(history_entry)
 
                                     st.markdown("---")
-                                    st.markdown("
                                     csv = vif_results.to_csv(index=False, encoding='utf-8-sig')
                                     b64 = base64.b64encode(csv.encode('utf-8-sig')).decode()
                                     href = f'<a href="data:file/csv;base64,{b64}" download="vif_analysis_results.csv">📥 VIF分析結果をCSV形式でダウンロード</a>'
@@ -553,8 +672,6 @@ st.markdown("""
                                             st.session_state['split_result'] = split_result
 
                                             st.markdown("---")
-                                            st.markdown("
-
                                             train_csv = split_result['X_train'].to_csv(index=False, encoding='utf-8-sig')
                                             train_b64 = base64.b64encode(train_csv.encode('utf-8-sig')).decode()
                                             train_href = f'<a href="data:file/csv;base64,{train_b64}" download="train_data.csv">📥 学習データ（CSV）</a>'
@@ -647,20 +764,53 @@ st.markdown("""
                                     **MCAR (Missing Completely At Random)**: 欠損が完全にランダム
                                     **MAR (Missing At Random)**: 他の観測変数で説明可能
                                     **MNAR (Missing Not At Random)**: 欠損自体が情報を持つ
+                                    """)
+                            except Exception as e:
+                                st.error(f"エラー: {e}")
 
-                                if 'parameters' in entry and entry['parameters']:
-                                    st.markdown("**詳細パラメータ**:")
-                                    param_text = "\n".join([f"- **{key}**: {value}" for key, value in entry['parameters'].items()])
-                                    st.markdown(param_text)
+    with tabs[6]:
+        st.subheader("処理履歴")
+        if len(st.session_state['processing_history']) > 0:
+            for entry in reversed(st.session_state['processing_history']):
+                with st.expander(f"{entry['timestamp']} - {entry['operation']}"):
+                    st.write(f"**方法**: {entry.get('method', 'N/A')}")
+                    if 'before' in entry:
+                        st.write(f"**処理前**: {entry['before']}")
+                    if 'after' in entry:
+                        st.write(f"**処理後**: {entry['after']}")
+                    if 'changes' in entry:
+                        st.write(f"**変更**: {entry['changes']}")
+                    if 'parameters' in entry and entry['parameters']:
+                        st.markdown("**詳細パラメータ**:")
+                        param_text = "\n".join([f"- **{key}**: {value}" for key, value in entry['parameters'].items()])
+                        st.markdown(param_text)
+        else:
+            st.info("処理履歴がありません")
 
+with st.sidebar:
+    st.header("ファイルアップロード")
+    uploaded_file = st.file_uploader("データファイルを選択", type=['csv', 'xlsx', 'xls', 'json'])
+
+    if uploaded_file is not None:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(uploaded_file.name)[1]) as tmp_file:
+            tmp_path = tmp_file.name
+            tmp_file.write(uploaded_file.getvalue())
+
+        try:
+            encoding_option = st.sidebar.selectbox("エンコーディング", ["auto", "utf-8", "shift_jis", "cp932", "euc-jp"])
+            encoding = None if encoding_option == "auto" else encoding_option
+
+            df = load_data_cached(tmp_path, encoding=encoding)
+
+            if df is not None and not df.empty:
+                st.session_state['current_df'] = df
+                st.session_state['original_df'] = df.copy()
+                st.success(f"✅ データを読み込みました: {len(df)}行 × {len(df.columns)}列")
+                st.rerun()
+            else:
+                st.error("データの読み込みに失敗しました")
+        except Exception as e:
+            st.error(f"エラー: {e}")
         finally:
-
             if os.path.exists(tmp_path):
                 os.unlink(tmp_path)
-
-    else:
-
-        pass
-
-if __name__ == "__main__":
-    main()
