@@ -183,11 +183,22 @@ else:
 
     with tabs[2]:
         st.subheader("データ前処理")
-        missing_strategy = st.selectbox("欠損値処理", ["auto", "drop", "fill (mean)", "fill (median)", "fill (mode)", "knn"])
-        outlier_method = st.selectbox("外れ値処理", ["none", "iqr", "zscore", "isolation_forest"])
-        encoding_method = st.selectbox("カテゴリ変数エンコーディング", ["auto", "label", "onehot", "target"])
-        scaling_method = st.selectbox("特徴量スケーリング", ["none", "standard", "minmax", "robust"])
-        feature_selection = st.checkbox("特徴量選択を実行", value=False)
+        st.info("💡 前処理設定は左側のサイドバーから変更できます")
+        
+        missing_strategy = st.session_state.get('missing_strategy', 'auto')
+        outlier_method = st.session_state.get('outlier_method', 'none')
+        encoding_method = st.session_state.get('encoding_method', 'auto')
+        scaling_method = st.session_state.get('scaling_method', 'none')
+        feature_selection = st.session_state.get('feature_selection', False)
+
+        col1, col2 = st.columns(2)
+        with col1:
+            st.write(f"**欠損値処理**: {missing_strategy}")
+            st.write(f"**外れ値処理**: {outlier_method}")
+        with col2:
+            st.write(f"**カテゴリ変数エンコーディング**: {encoding_method}")
+            st.write(f"**特徴量スケーリング**: {scaling_method}")
+            st.write(f"**特徴量選択**: {'有効' if feature_selection else '無効'}")
 
         if st.button("前処理を実行", type="primary"):
             try:
@@ -797,7 +808,7 @@ with st.sidebar:
             tmp_file.write(uploaded_file.getvalue())
 
         try:
-            encoding_option = st.sidebar.selectbox("エンコーディング", ["auto", "utf-8", "shift_jis", "cp932", "euc-jp"])
+            encoding_option = st.selectbox("エンコーディング", ["auto", "utf-8", "shift_jis", "cp932", "euc-jp"])
             encoding = None if encoding_option == "auto" else encoding_option
 
             df = load_data_cached(tmp_path, encoding=encoding)
@@ -814,3 +825,63 @@ with st.sidebar:
         finally:
             if os.path.exists(tmp_path):
                 os.unlink(tmp_path)
+
+    if st.session_state.get('current_df') is not None:
+        st.markdown("---")
+        st.header("データ情報")
+        df = st.session_state['current_df']
+        st.metric("行数", len(df))
+        st.metric("列数", len(df.columns))
+        
+        if 'original_df' in st.session_state and st.session_state['original_df'] is not None:
+            memory_mb = estimate_df_memory_mb(df)
+            if memory_mb:
+                st.metric("メモリ使用量", format_mb(memory_mb))
+
+        st.markdown("---")
+        st.header("前処理設定")
+        
+        if 'missing_strategy' not in st.session_state:
+            st.session_state['missing_strategy'] = "auto"
+        if 'outlier_method' not in st.session_state:
+            st.session_state['outlier_method'] = "none"
+        if 'encoding_method' not in st.session_state:
+            st.session_state['encoding_method'] = "auto"
+        if 'scaling_method' not in st.session_state:
+            st.session_state['scaling_method'] = "none"
+        if 'feature_selection' not in st.session_state:
+            st.session_state['feature_selection'] = False
+
+        st.session_state['missing_strategy'] = st.selectbox(
+            "欠損値処理",
+            ["auto", "drop", "fill (mean)", "fill (median)", "fill (mode)", "knn"],
+            index=["auto", "drop", "fill (mean)", "fill (median)", "fill (mode)", "knn"].index(st.session_state['missing_strategy']) if st.session_state['missing_strategy'] in ["auto", "drop", "fill (mean)", "fill (median)", "fill (mode)", "knn"] else 0,
+            help="欠損値の処理方法を選択"
+        )
+
+        st.session_state['outlier_method'] = st.selectbox(
+            "外れ値処理",
+            ["none", "iqr", "zscore", "isolation_forest"],
+            index=["none", "iqr", "zscore", "isolation_forest"].index(st.session_state['outlier_method']) if st.session_state['outlier_method'] in ["none", "iqr", "zscore", "isolation_forest"] else 0,
+            help="外れ値の検出・除去方法を選択"
+        )
+
+        st.session_state['encoding_method'] = st.selectbox(
+            "カテゴリ変数エンコーディング",
+            ["auto", "label", "onehot", "target"],
+            index=["auto", "label", "onehot", "target"].index(st.session_state['encoding_method']) if st.session_state['encoding_method'] in ["auto", "label", "onehot", "target"] else 0,
+            help="カテゴリ変数のエンコーディング方法を選択"
+        )
+
+        st.session_state['scaling_method'] = st.selectbox(
+            "特徴量スケーリング",
+            ["none", "standard", "minmax", "robust"],
+            index=["none", "standard", "minmax", "robust"].index(st.session_state['scaling_method']) if st.session_state['scaling_method'] in ["none", "standard", "minmax", "robust"] else 0,
+            help="特徴量のスケーリング方法を選択"
+        )
+
+        st.session_state['feature_selection'] = st.checkbox(
+            "特徴量選択を実行",
+            value=st.session_state['feature_selection'],
+            help="特徴量選択を実行するかどうか"
+        )
