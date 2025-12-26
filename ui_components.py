@@ -2,12 +2,19 @@ import streamlit as st
 
 
 def render_header() -> None:
-    col_header1, col_header2, col_header3, col_header4 = st.columns([2, 1, 1, 1])
+    col_header1, col_header2, col_header3, col_header4, col_header5 = st.columns([2, 1, 1, 1, 1])
     with col_header1:
         st.title("データ前処理ツール")
     with col_header2:
         st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("ホーム", use_container_width=True, help="メインページに戻る"):
+        if st.button("← 戻る", use_container_width=True, help="ひとつ前のページに戻る"):
+            if 'active_tab' in st.session_state:
+                tab_options = ["データ", "分析", "前処理", "可視化", "統計検定", "高度な機能", "履歴"]
+                current_index = tab_options.index(st.session_state['active_tab']) if st.session_state['active_tab'] in tab_options else 0
+                if current_index > 0:
+                    st.session_state['active_tab'] = tab_options[current_index - 1]
+                else:
+                    st.session_state['active_tab'] = tab_options[0]
             if 'show_help' in st.session_state:
                 del st.session_state['show_help']
             if 'show_full_history' in st.session_state:
@@ -15,11 +22,21 @@ def render_header() -> None:
             st.rerun()
     with col_header3:
         st.markdown("<br>", unsafe_allow_html=True)
+        if st.button("ホーム", use_container_width=True, help="メインページに戻る"):
+            if 'show_help' in st.session_state:
+                del st.session_state['show_help']
+            if 'show_full_history' in st.session_state:
+                del st.session_state['show_full_history']
+            if 'active_tab' in st.session_state:
+                st.session_state['active_tab'] = "データ"
+            st.rerun()
+    with col_header4:
+        st.markdown("<br>", unsafe_allow_html=True)
         if st.button("リセット", use_container_width=True, help="すべての設定とデータをリセット"):
             for key in list(st.session_state.keys()):
                 del st.session_state[key]
             st.rerun()
-    with col_header4:
+    with col_header5:
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("ヘルプ", use_container_width=True, help="使い方ガイドを表示"):
             st.session_state['show_help'] = True

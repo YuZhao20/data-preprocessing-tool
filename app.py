@@ -236,6 +236,21 @@ def main():
             preview_rows = 100_000
             display_rows = 5_000
         
+        # データダウンロードボタン（データが読み込まれている場合）
+        if 'current_df' in st.session_state and st.session_state['current_df'] is not None:
+            st.markdown("---")
+            st.markdown("## 📥 データダウンロード")
+            df = st.session_state['current_df']
+            if not df.empty:
+                csv = df.to_csv(index=False, encoding='utf-8-sig')
+                b64 = base64.b64encode(csv.encode('utf-8-sig')).decode()
+                file_name = st.session_state.get('file_name', 'processed_data')
+                if not file_name.endswith('.csv'):
+                    file_name = file_name.rsplit('.', 1)[0] if '.' in file_name else file_name
+                href = f'<a href="data:file/csv;base64,{b64}" download="{file_name}_processed.csv" style="display: inline-block; padding: 0.5rem 1rem; background-color: #1f77b4; color: white; text-decoration: none; border-radius: 0.5rem; text-align: center; width: 100%;">📥 処理済みデータをダウンロード</a>'
+                st.markdown(href, unsafe_allow_html=True)
+                st.caption(f"現在のデータ: {len(df)}行 × {len(df.columns)}列")
+        
         st.markdown("---")
         st.markdown("## 前処理設定")
         
