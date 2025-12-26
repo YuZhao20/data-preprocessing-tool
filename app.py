@@ -498,6 +498,7 @@ def main():
                 st.session_state['original_df'] = df.copy()
                 st.session_state['current_df'] = df.copy()
                 st.session_state['file_name'] = uploaded_file.name
+                st.rerun()
             
             # 処理履歴を初期化（セッション状態に保存）
             if 'processing_history' not in st.session_state:
