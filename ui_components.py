@@ -38,7 +38,8 @@ def render_recent_history() -> None:
             st.session_state['show_full_history'] = True
             st.rerun()
 
-    recent_history = st.session_state['processing_history'][-3:][::-1]
+    # 最新3件をカード形式で表示
+    recent_history = st.session_state['processing_history'][-3:][::-1]  # 最新3件、新しい順
 
     hist_cols = st.columns(min(len(recent_history), 3))
     for idx, entry in enumerate(recent_history):
@@ -91,6 +92,7 @@ def render_help() -> None:
         help_tabs = st.tabs(["使い方ガイド", "前処理のフロー", "よくある質問", "機能一覧", "使用例とサンプルデータ"])
 
         with help_tabs[0]:
+            # ヘルプ画面の最初にメッセージを表示
             st.info("👈 左側のサイドバーからデータファイルをアップロードしてください")
 
             st.markdown("""
