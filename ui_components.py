@@ -8,6 +8,10 @@ def render_header() -> None:
     with col_header2:
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("← 戻る", use_container_width=True, help="ひとつ前のページに戻る"):
+            if 'show_full_history' in st.session_state:
+                del st.session_state['show_full_history']
+            if 'show_help' in st.session_state:
+                del st.session_state['show_help']
             if 'active_tab' in st.session_state:
                 tab_options = ["データ", "分析", "前処理", "可視化", "統計検定", "高度な機能", "履歴"]
                 current_index = tab_options.index(st.session_state['active_tab']) if st.session_state['active_tab'] in tab_options else 0
@@ -15,10 +19,6 @@ def render_header() -> None:
                     st.session_state['active_tab'] = tab_options[current_index - 1]
                 else:
                     st.session_state['active_tab'] = tab_options[0]
-            if 'show_help' in st.session_state:
-                del st.session_state['show_help']
-            if 'show_full_history' in st.session_state:
-                del st.session_state['show_full_history']
             st.rerun()
     with col_header3:
         st.markdown("<br>", unsafe_allow_html=True)
